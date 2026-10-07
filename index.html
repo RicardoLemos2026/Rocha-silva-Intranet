@@ -1,6 +1,10 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
+<script>window.RS_LOGIN_PAGE=true</script>
+<script src="firebase-config.js"></script>
+<script src="auth-gate.js"></script>
+
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Rocha Silva Cleaning — Central</title>
@@ -59,6 +63,17 @@
   .card .go::after{content:"→"; transition:.15s;}
   .card:hover .go::after{transform:translateX(3px);}
 
+  .login{max-width:400px; margin:0 auto; background:#fff; border:1px solid var(--grey-200); border-radius:var(--radius); box-shadow:var(--shadow); padding:30px}
+  .login h1{font-family:'Space Grotesk',sans-serif; font-size:22px; color:var(--navy); margin-bottom:6px}
+  .login p{font-size:13.5px; color:var(--grey-600); margin-bottom:18px}
+  .login label{display:block; font-size:12px; font-weight:600; color:var(--grey-500); margin:12px 0 6px}
+  .login input{width:100%; font:inherit; font-size:14px; padding:11px 13px; border:1.5px solid var(--grey-200); border-radius:10px; background:var(--grey-050)}
+  .login input:focus{outline:none; border-color:var(--blue); background:#fff}
+  .login button{margin-top:18px; width:100%; font:inherit; font-weight:600; font-size:14px; padding:12px; border:0; border-radius:10px; background:var(--orange); color:#fff; cursor:pointer}
+  .login button:disabled{opacity:.6; cursor:default}
+  .login .err{color:#b3261e; font-size:13px; margin-top:12px; min-height:18px}
+  .out{margin-left:auto; font-size:12.5px; color:#aebbd6; display:none; align-items:center; gap:12px}
+  .out button{font:inherit; font-weight:600; font-size:12.5px; color:#fff; background:transparent; border:1px solid rgba(255,255,255,.35); border-radius:8px; padding:6px 12px; cursor:pointer}
   footer{
     text-align:center; padding:22px; font-size:12px; color:var(--grey-500);
     border-top:1px solid var(--grey-200); background:#fff;
@@ -73,10 +88,25 @@
         <div class="prod">Rocha Silva Cleaning</div>
         <div class="sub">Central de ferramentas — Business Connection</div>
       </div>
+      <div class="out" id="out"><span id="out-user"></span><button onclick="RS_AUTH.signOut()">Sair</button></div>
     </div>
   </header>
 
   <main>
+    <div id="checking" style="text-align:center;color:var(--grey-500);padding:60px 0">Verificando acesso…</div>
+
+    <div class="login" id="login" style="display:none">
+      <h1>Acesso restrito</h1>
+      <p>Entre com seu e-mail e senha para acessar o dashboard e a calculadora.</p>
+      <label for="lg-email">E-mail</label>
+      <input type="text" id="lg-email" autocomplete="username">
+      <label for="lg-pass">Senha</label>
+      <input type="password" id="lg-pass" autocomplete="current-password">
+      <button id="lg-btn" onclick="doLogin()">Entrar</button>
+      <div class="err" id="lg-err"></div>
+    </div>
+
+    <div id="home" style="display:none">
     <div class="intro">
       <h1>O que você precisa hoje?</h1>
       <p>Acesse o acompanhamento de metas e faturamento, ou monte um orçamento de limpeza com base na tabela de preços vigente.</p>
@@ -97,8 +127,28 @@
         <div class="go">Abrir calculadora</div>
       </a>
     </div>
+    </div>
   </main>
 
   <footer>Rocha Silva Cleaning · ferramentas internas — Business Connection</footer>
+<script>
+document.getElementById('lg-pass').addEventListener('keydown',e=>{ if(e.key==='Enter') doLogin(); });
+async function doLogin(){
+  const btn=document.getElementById('lg-btn'), err=document.getElementById('lg-err');
+  err.textContent=''; btn.disabled=true; btn.textContent='Entrando…';
+  try{ await RS_AUTH.signIn(document.getElementById('lg-email').value.trim(), document.getElementById('lg-pass').value); }
+  catch(e){ err.textContent='E-mail ou senha incorretos.'; }
+  btn.disabled=false; btn.textContent='Entrar';
+}
+RS_AUTH.onChange(user=>{
+  const show = (id,v)=>document.getElementById(id).style.display=v;
+  show('checking','none');
+  if(RS_AUTH.error){ show('login','none'); show('home','none'); document.getElementById('checking').style.display='block'; document.getElementById('checking').textContent='Não foi possível verificar o login. Confira a conexão e recarregue a página.'; return; }
+  const ok = RS_AUTH.open || !!user;
+  show('home', ok?'block':'none'); show('login', ok?'none':'block');
+  const out=document.getElementById('out'); out.style.display = (!RS_AUTH.open && user) ? 'flex' : 'none';
+  document.getElementById('out-user').textContent = user ? (user.email||'') : '';
+});
+</script>
 </body>
 </html>
