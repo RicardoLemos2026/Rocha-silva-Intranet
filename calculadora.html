@@ -210,6 +210,7 @@
     <nav>
       <button id="tab-guide" class="active" onclick="showView('guide')">Instruções</button>
       <button id="tab-calc" onclick="showView('calc')">Calculadora</button>
+      <button id="tab-hist" onclick="showView('hist')">Histórico</button>
       <button id="tab-params" onclick="showView('params')">Parâmetros</button>
     </nav>
   </div>
@@ -230,6 +231,7 @@
           <li>Abra a aba <b>Calculadora</b>.</li>
           <li>Escolha o <b>Tipo de Serviço</b> (Regular, Deep ou Move In/Out) e informe a <b>metragem</b> da casa (sq ft).</li>
           <li>Selecione a <b>Condição</b> do imóvel e, se o serviço for Regular, a <b>Frequência</b> da limpeza — ela só afeta o preço quando o serviço é Regular.</li>
+          <li>Se quiser, informe o Desconto manual (%) e/ou a Taxa manual (%), aplicados sobre o valor total.</li>
           <li>Marque as áreas extras que se aplicam (porão, banheiro no porão, garagem, pets) e os extras avulsos (geladeira, forno, armários, rodapés, janelas).</li>
           <li>Se o cliente tiver carpete, informe a quantidade de cada tipo de cômodo/peça — o valor é somado por unidade.</li>
           <li>O preço final aparece em destaque, com o detalhamento completo logo abaixo. Use o botão de copiar no resumo para enviar o orçamento ao cliente.</li>
@@ -256,7 +258,7 @@
         <div class="g-flow">
           <div class="g-step"><span class="n">A</span><span class="t"><b>Preço base</b> — a metragem define a faixa, e cada faixa tem um preço próprio para Regular, Deep e Move In/Out. É o ponto de partida de tudo.</span></div>
           <div class="g-step"><span class="n">B</span><span class="t"><b>Condição</b> — Light, Standard, Heavy ou Very Heavy somam um valor fixo em dólares ao subtotal, independente do tipo de serviço.</span></div>
-          <div class="g-step"><span class="n">C</span><span class="t"><b>Áreas extras</b> — porão (Finished ou Unfinished), banheiro no porão, garagem e pets cada um soma um valor fixo quando marcado.</span></div>
+          <div class="g-step"><span class="n">C</span><span class="t"><b>Áreas extras</b> — porão (Finished ou Unfinished), banheiro no porão, garagem e pets cada um soma um valor fixo quando marcado. A garagem custa $100 no Deep Clean (editável em Parâmetros) e $50 nos demais.</span></div>
           <div class="g-step"><span class="n">D</span><span class="t"><b>Extras avulsos</b> — geladeira, forno, armários, rodapés e janelas são independentes entre si; cada um marcado soma seu valor fixo.</span></div>
           <div class="g-step"><span class="n">E</span><span class="t"><b>Frequência</b> — Weekly, Biweekly, Monthly e One Time aplicam um percentual sobre o subtotal, <b>mas somente quando o Tipo de Serviço é Regular</b>. Para Deep e Move In/Out, a frequência não altera o preço.</span></div>
           <div class="g-step"><span class="n">F</span><span class="t"><b>Carpete</b> — cada tipo de cômodo/peça tem um valor por unidade; multiplica-se a quantidade informada pelo valor e soma-se tudo ao preço final, por fora do subtotal e da frequência.</span></div>
@@ -293,6 +295,20 @@
     <div class="grid">
       <!-- INPUTS -->
       <div>
+        <div class="card" style="margin-bottom:18px">
+          <div class="head"><h3>Cliente</h3></div>
+          <div class="body">
+            <div class="field"><label for="i-cli-nome">Nome do cliente</label>
+              <input type="text" id="i-cli-nome" placeholder="Ex.: Maria Silva"></div>
+            <div class="field"><label for="i-cli-contato">Telefone / e-mail</label>
+              <input type="text" id="i-cli-contato"></div>
+            <div class="field"><label for="i-cli-end">Endereço</label>
+              <input type="text" id="i-cli-end"></div>
+            <div class="field"><label for="i-cli-obs">Observações</label>
+              <input type="text" id="i-cli-obs"></div>
+          </div>
+        </div>
+
         <div class="card">
           <div class="head"><h3>Dados do serviço</h3></div>
           <div class="body">
@@ -316,6 +332,22 @@
               <label for="i-freq">Frequência <span id="freq-tag" class="hint"></span></label>
               <select id="i-freq" onchange="calc()"></select>
               <div class="hint" id="freq-hint">Aplica-se apenas ao Regular.</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:18px">
+          <div class="head"><h3>Ajustes manuais</h3></div>
+          <div class="body">
+            <div class="field">
+              <label for="i-desc">Desconto manual (%)</label>
+              <input type="number" id="i-desc" min="0" step="0.1" value="0" oninput="calc()">
+              <div class="hint">Percentual descontado sobre o valor total.</div>
+            </div>
+            <div class="field">
+              <label for="i-taxa">Taxa manual (%)</label>
+              <input type="number" id="i-taxa" min="0" step="0.1" value="0" oninput="calc()">
+              <div class="hint">Percentual acrescentado sobre o valor total.</div>
             </div>
           </div>
         </div>
@@ -364,6 +396,13 @@
           </div>
         </div>
 
+        <div id="sync-note" class="hint" style="display:none;margin-bottom:12px;padding:10px 14px;background:#FDECEC;border:1px solid #F3B9B9;border-radius:10px;color:#8a1f1f"></div>
+        <div id="loaded-note" class="hint" style="display:none;margin-bottom:12px;padding:10px 14px;background:#FFF6E5;border:1px solid #F5D9A0;border-radius:10px;color:#7a5200"></div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:20px">
+          <button class="btn btn-primary" id="btn-save-est" onclick="saveEstimate()">Salvar orçamento</button>
+          <button class="btn btn-ghost" onclick="newEstimate()">Novo orçamento</button>
+        </div>
+
         <h2 class="section">Detalhamento</h2>
         <table class="breakdown" id="breakdown-table"></table>
 
@@ -372,6 +411,29 @@
           <div class="text" id="client-text">—</div>
           <button class="copy" onclick="copyClient()">Copiar texto</button>
         </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ HISTÓRICO ============ -->
+  <section id="view-hist" class="view">
+    <div style="max-width:1100px;margin:0 auto;padding:24px 20px">
+      <div id="hist-status"></div>
+      <div id="hist-login" class="card" style="display:none;max-width:420px;margin-bottom:18px">
+        <div class="head"><h3>Entrar</h3></div>
+        <div class="body">
+          <div class="field"><label for="lg-email">E-mail</label><input type="text" id="lg-email" autocomplete="username"></div>
+          <div class="field"><label for="lg-pass">Senha</label><input type="password" id="lg-pass" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()"></div>
+          <button class="btn btn-primary" onclick="doLogin()">Entrar</button>
+        </div>
+      </div>
+      <div id="hist-main" style="display:none">
+        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:14px">
+          <input type="text" id="hist-q" placeholder="Buscar por cliente, endereço, tipo…" oninput="histRender()" style="max-width:340px">
+          <span id="hist-user" class="hint" style="margin-left:auto"></span>
+          <button class="btn btn-ghost" onclick="doLogout()" id="btn-logout">Sair</button>
+        </div>
+        <table class="params" id="hist-table"></table>
       </div>
     </div>
   </section>
@@ -443,6 +505,7 @@
 <footer>Precificação · Rocha Silva Cleaning — ferramenta interna de orçamento</footer>
 <div class="toast" id="toast"></div>
 
+<script src="firebase-config.js"></script>
 <script>
 /* ---------------- Default parameters ---------------- */
 const DEFAULTS = {
@@ -469,6 +532,7 @@ const DEFAULTS = {
   porao:{ finished:40, unfinished:25 },
   banheiroPorao:20,
   garagem:50,
+  garagemDeep:100,
   pets:25,
   extras:[
     {key:'fridge',     label:'Fridge',     value:55},
@@ -494,8 +558,13 @@ let P;
 
 function load(){
   try{
-    const s = localStorage.getItem(KEY);
-    const saved = s ? JSON.parse(s) : null;
+    // Com Firebase configurado, a tabela vem do banco compartilhado (não do navegador).
+    const s = window.FIREBASE_CONFIG ? null : localStorage.getItem(KEY);
+    applySaved(s ? JSON.parse(s) : null);
+  }catch(e){ P = structuredClone(DEFAULTS); }
+}
+function applySaved(saved){
+  try{
     P = structuredClone(DEFAULTS);
     if(saved){
       if(Array.isArray(saved.bands)) P.bands = saved.bands;
@@ -504,22 +573,24 @@ function load(){
       if(saved.porao) P.porao = Object.assign({}, P.porao, saved.porao);
       if(typeof saved.banheiroPorao === 'number') P.banheiroPorao = saved.banheiroPorao;
       if(typeof saved.garagem === 'number') P.garagem = saved.garagem;
+      if(typeof saved.garagemDeep === 'number') P.garagemDeep = saved.garagemDeep;
       if(typeof saved.pets === 'number') P.pets = saved.pets;
       if(Array.isArray(saved.extras)) P.extras = saved.extras;
       if(Array.isArray(saved.carpete)) P.carpete = saved.carpete;
     }
   }catch(e){ P = structuredClone(DEFAULTS); }
 }
-function persist(){ try{ localStorage.setItem(KEY, JSON.stringify(P)); }catch(e){} }
+function persist(){ if(window.FIREBASE_CONFIG) return; try{ localStorage.setItem(KEY, JSON.stringify(P)); }catch(e){} }
 
 /* ---------------- Navigation ---------------- */
 function showView(v){
   document.querySelectorAll('.view').forEach(el=>el.classList.remove('active'));
   document.getElementById('view-'+v).classList.add('active');
-  ['guide','calc','params'].forEach(x=>
+  ['guide','calc','hist','params'].forEach(x=>
     document.getElementById('tab-'+x).classList.toggle('active', v===x));
   if(v==='calc') calc();
   if(v==='params') renderParams();
+  if(v==='hist') histRender();
   window.scrollTo(0,0);
 }
 
@@ -546,7 +617,7 @@ function renderCalcInputs(){
       <div class="switch"></div><input type="checkbox" id="i-banheiro" onchange="calc()">
     </div>
     <div class="toggle-cell" id="cell-garagem" onclick="toggleCell('garagem')">
-      <div><div class="t-label">Garagem</div><div class="t-val">+$${money(P.garagem)}</div></div>
+      <div><div class="t-label">Garagem</div><div class="t-val" id="garagem-val">+$${money(P.garagem)}</div></div>
       <div class="switch"></div><input type="checkbox" id="i-garagem" onchange="calc()">
     </div>
     <div class="toggle-cell" id="cell-pets" onclick="toggleCell('pets')">
@@ -602,7 +673,9 @@ function calc(){
 
   const valorPorao = porao==='finished' ? (P.porao.finished||0) : porao==='unfinished' ? (P.porao.unfinished||0) : 0;
   const valorBanheiro = banheiro ? P.banheiroPorao : 0;
-  const valorGaragem = garagem ? P.garagem : 0;
+  const garagemUnit = tipo==='Deep' ? P.garagemDeep : P.garagem;
+  document.getElementById('garagem-val').textContent = '+$' + money(garagemUnit) + (tipo==='Deep' ? ' (Deep)' : '');
+  const valorGaragem = garagem ? garagemUnit : 0;
   const valorPets = pets ? P.pets : 0;
 
   const extrasSel = [];
@@ -635,8 +708,14 @@ function calc(){
     if(qty>0){ valorCarpete += qty * c.value; carpeteSel.push(`${c.label} x${qty}`); }
   });
 
-  const final = subtotal + ajusteFreq + valorCarpete;
+  const totalBruto = subtotal + ajusteFreq + valorCarpete;
+  const descPct = Math.max(0, +document.getElementById('i-desc').value || 0);
+  const taxaPct = Math.max(0, +document.getElementById('i-taxa').value || 0);
+  const valorDesconto = totalBruto * descPct / 100;
+  const valorTaxa = totalBruto * taxaPct / 100;
+  const final = totalBruto - valorDesconto + valorTaxa;
 
+  window._lastCalc = { tipo, sqft, final, totalBruto, descPct, valorDesconto, taxaPct, valorTaxa, subtotal, ajusteFreq, valorCarpete, valorExtras, precoBase, extrasSel, carpeteSel, freqLabel:freqObj.label, condLabel:condObj.label };
   renderHero(final, tipo, sqft);
   renderBreakdown({
     precoBase, bandLabel:`${band.de}–${band.ate} sq ft`, tipo,
@@ -647,10 +726,11 @@ function calc(){
     subtotal,
     isRegular, ajusteFreq, freqLabel:freqObj.label, freqPct:freqObj.pct,
     valorCarpete, carpeteSel,
+    totalBruto, descPct, valorDesconto, taxaPct, valorTaxa,
     final
   });
   updateClientText({ tipo, sqft, condLabel:condObj.label, isRegular, freqLabel:freqObj.label,
-    porao, banheiro, garagem, pets, extrasSel, carpeteSel, final });
+    porao, banheiro, garagem, pets, extrasSel, carpeteSel, descPct, taxaPct, final });
 }
 
 function renderHero(final, tipo, sqft){
@@ -675,6 +755,11 @@ function renderBreakdown(d){
     rows.push(`<tr class="muted"><td>Ajuste de frequência — aplica-se apenas ao Regular</td><td class="val">$0.00</td></tr>`);
   }
   if(d.valorCarpete>0) rows.push(`<tr><td>Carpete (${d.carpeteSel.join(', ')})</td><td class="val">+$${money(d.valorCarpete)}</td></tr>`);
+  if(d.descPct>0 || d.taxaPct>0){
+    rows.push(`<tr class="subtotal"><td>Total antes dos ajustes manuais</td><td class="val">$${money(d.totalBruto)}</td></tr>`);
+    if(d.descPct>0) rows.push(`<tr><td>Desconto manual (${d.descPct}%)</td><td class="val">−$${money(d.valorDesconto)}</td></tr>`);
+    if(d.taxaPct>0) rows.push(`<tr><td>Taxa manual (${d.taxaPct}%)</td><td class="val">+$${money(d.valorTaxa)}</td></tr>`);
+  }
   rows.push(`<tr class="final"><td>Preço Final</td><td class="val">$${money(d.final)}</td></tr>`);
 
   document.getElementById('breakdown-table').innerHTML =
@@ -693,6 +778,8 @@ function updateClientText(d){
   let txt = `Serviço: ${d.tipo} · Metragem: ${d.sqft.toLocaleString('en-US')} sq ft · Condição: ${d.condLabel}`;
   if(d.isRegular) txt += ` · Frequência: ${d.freqLabel}`;
   if(opts.length) txt += `\nOpções: ${opts.join(', ')}`;
+  if(d.descPct>0) txt += `\nDesconto manual: ${d.descPct}%`;
+  if(d.taxaPct>0) txt += `\nTaxa manual: ${d.taxaPct}%`;
   txt += `\nPreço Final: US$ ${money(d.final)}`;
 
   document.getElementById('client-text').textContent = txt;
@@ -757,6 +844,11 @@ function renderParams(){
       <input type="number" step="1" value="${P.garagem}" oninput="P.garagem=+this.value; markDirty()"></div>
     </div>
     <div class="cost-cell">
+      <label>Garagem (Deep Clean)</label>
+      <div class="with-unit"><span class="unit">$</span>
+      <input type="number" step="1" value="${P.garagemDeep}" oninput="P.garagemDeep=+this.value; markDirty()"></div>
+    </div>
+    <div class="cost-cell">
       <label>Pets</label>
       <div class="with-unit"><span class="unit">$</span>
       <input type="number" step="1" value="${P.pets}" oninput="P.pets=+this.value; markDirty()"></div>
@@ -780,12 +872,17 @@ function renderParams(){
 }
 
 function markDirty(){
+  window._dirty = true;
   document.getElementById('save-status').textContent = "Alterações não salvas";
   document.querySelector('.dot').style.background = "var(--orange)";
 }
-function saveParams(){
-  persist();
-  document.getElementById('save-status').textContent = "Salvo";
+async function saveParams(){
+  if(window.FIREBASE_CONFIG){
+    if(!DB.user){ toast('Entre (aba Histórico) para salvar a tabela compartilhada'); return; }
+    try{ await DB.impl.saveParams(P); }catch(e){ toast('Erro ao salvar: ' + (e.message||e)); return; }
+    window._dirty = false;
+  } else persist();
+  document.getElementById('save-status').textContent = window.FIREBASE_CONFIG ? "Salvo para todos" : "Salvo";
   document.querySelector('.dot').style.background = "var(--ok)";
   toast('Parâmetros salvos');
   renderCalcInputs();
@@ -794,7 +891,11 @@ function saveParams(){
 function resetParams(){
   if(confirm('Restaurar os parâmetros padrão? Suas alterações serão perdidas.')){
     P = structuredClone(DEFAULTS);
-    persist();
+    if(window.FIREBASE_CONFIG){
+      if(!DB.user){ toast('Entre (aba Histórico) para restaurar'); return; }
+      DB.impl.saveParams(P).catch(e=>toast('Erro ao salvar: '+(e.message||e)));
+      window._dirty = false;
+    } else persist();
     renderParams();
     renderCalcInputs();
     calc();
@@ -813,10 +914,171 @@ function toast(msg){
   window._tt = setTimeout(()=>t.classList.remove('show'), 1800);
 }
 
+/* ---------------- Histórico (Firebase) ---------------- */
+const EST_IDS = ['i-tipo','i-sqft','i-condicao','i-freq','i-porao','i-desc','i-taxa','i-cli-nome','i-cli-contato','i-cli-end','i-cli-obs'];
+function getInputs(){
+  const o = {};
+  EST_IDS.forEach(id=>o[id]=document.getElementById(id).value);
+  ['i-banheiro','i-garagem','i-pets'].forEach(id=>o[id]=document.getElementById(id).checked);
+  o.extras = {}; P.extras.forEach(ex=>o.extras[ex.key]=document.getElementById('i-ex-'+ex.key).checked);
+  o.carpete = {}; P.carpete.forEach(c=>o.carpete[c.key]=+document.getElementById('i-cp-'+c.key).value||0);
+  return o;
+}
+function setInputs(o){
+  EST_IDS.forEach(id=>{ if(o[id]!==undefined) document.getElementById(id).value = o[id]; });
+  ['i-banheiro','i-garagem','i-pets'].forEach(id=>{ document.getElementById(id).checked = !!o[id]; });
+  P.extras.forEach(ex=>document.getElementById('i-ex-'+ex.key).checked = !!(o.extras&&o.extras[ex.key]));
+  P.carpete.forEach(c=>document.getElementById('i-cp-'+c.key).value = (o.carpete&&o.carpete[c.key])||0);
+}
+function newEstimate(){
+  setInputs({'i-tipo':'Regular','i-sqft':1500,'i-condicao':P.condicao[0].key,'i-freq':P.freq[0].key,'i-porao':'nenhum','i-desc':0,'i-taxa':0,'i-cli-nome':'','i-cli-contato':'','i-cli-end':'','i-cli-obs':'',extras:{},carpete:{}});
+  document.getElementById('loaded-note').style.display='none';
+  calc();
+}
+
+const DB = { ready:false, user:null, docs:[], err:null, impl:null, listeners:[] };
+function dbNotify(){ DB.listeners.forEach(f=>f()); }
+
+async function dbInit(){
+  const cfg = window.FIREBASE_CONFIG;
+  if(!cfg){ DB.err = 'nao-configurado'; dbNotify(); return; }
+  try{
+    const base = 'https://www.gstatic.com/firebasejs/10.12.2/';
+    const [{initializeApp}, fs, au] = await Promise.all([
+      import(base+'firebase-app.js'), import(base+'firebase-firestore.js'), import(base+'firebase-auth.js')]);
+    const app = initializeApp(cfg);
+    const db = fs.getFirestore(app), auth = au.getAuth(app);
+    DB.impl = {
+      add: d => fs.addDoc(fs.collection(db,'orcamentos'), Object.assign({}, d, { criadoEm: fs.serverTimestamp() })),
+      signIn: (e,p) => au.signInWithEmailAndPassword(auth,e,p),
+      signOut: () => au.signOut(auth),
+      saveParams: p => fs.setDoc(fs.doc(db,'config','parametros'), { json: JSON.stringify(p), atualizadoPor: (auth.currentUser&&auth.currentUser.email)||'', atualizadoEm: fs.serverTimestamp() })
+    };
+    let unsub = null, unsubP = null;
+    au.onAuthStateChanged(auth, user=>{
+      DB.user = user; DB.ready = true;
+      if(unsub){ unsub(); unsub=null; }
+      if(unsubP){ unsubP(); unsubP=null; }
+      DB.paramsSynced = false;
+      if(user){
+        unsubP = fs.onSnapshot(fs.doc(db,'config','parametros'), snap=>{
+          DB.paramsSynced = true; DB.paramsExist = snap.exists();
+          if(snap.exists() && !window._dirty){
+            try{ onRemoteParams(JSON.parse(snap.data().json)); }catch(e){}
+          }
+          dbNotify();
+        }, e=>{ DB.err = e.message || String(e); dbNotify(); });
+        const q = fs.query(fs.collection(db,'orcamentos'), fs.orderBy('criadoEm','desc'), fs.limit(500));
+        unsub = fs.onSnapshot(q, snap=>{
+          DB.docs = snap.docs.map(x=>Object.assign({id:x.id}, x.data()));
+          DB.err = null; dbNotify();
+        }, e=>{ DB.err = e.message || String(e); dbNotify(); });
+      } else { DB.docs = []; }
+      dbNotify();
+    });
+  }catch(e){ DB.err = e.message || String(e); dbNotify(); }
+}
+DB.listeners.push(()=>{ if(document.getElementById('view-hist').classList.contains('active')) histRender(); });
+
+function onRemoteParams(saved){
+  const inp = getInputs();
+  applySaved(saved);
+  renderCalcInputs();
+  setInputs(inp);
+  calc();
+  if(document.getElementById('view-params').classList.contains('active')) renderParams();
+}
+function syncNote(){
+  const n = document.getElementById('sync-note'); if(!n) return;
+  let msg = '';
+  if(window.FIREBASE_CONFIG){
+    if(!DB.ready) msg = 'Conectando ao banco de dados…';
+    else if(!DB.user) msg = 'Você não está conectado: os preços abaixo são os valores padrão, não a tabela compartilhada. Entre na aba Histórico.';
+    else if(!DB.paramsSynced) msg = 'Carregando a tabela de preços compartilhada…';
+    else if(!DB.paramsExist) msg = 'A tabela compartilhada ainda não foi salva: usando os valores padrão. Salve na aba Parâmetros para todos usarem a mesma.';
+  }
+  n.textContent = msg; n.style.display = msg ? 'block' : 'none';
+}
+DB.listeners.push(syncNote);
+
+function esc(x){ return String(x==null?'':x).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+function fmtDate(t){
+  try{ const d = t && t.toDate ? t.toDate() : (t ? new Date(t) : null); return d ? d.toLocaleString('pt-BR',{dateStyle:'short',timeStyle:'short'}) : '—'; }catch(e){ return '—'; }
+}
+
+async function saveEstimate(){
+  if(!window.FIREBASE_CONFIG){ toast('Banco de dados não configurado'); showView('hist'); return; }
+  if(!DB.user){ toast('Entre para salvar'); showView('hist'); return; }
+  const inp = getInputs();
+  if(!inp['i-cli-nome'].trim()){ toast('Informe o nome do cliente'); document.getElementById('i-cli-nome').focus(); return; }
+  calc();
+  const r = window._lastCalc;
+  const doc = {
+    cliente: inp['i-cli-nome'].trim(), contato: inp['i-cli-contato'].trim(), endereco: inp['i-cli-end'].trim(), observacoes: inp['i-cli-obs'].trim(),
+    tipo: r.tipo, sqft: r.sqft, condicao: r.condLabel, frequencia: r.freqLabel,
+    precoBase: r.precoBase, subtotal: r.subtotal, ajusteFrequencia: r.ajusteFreq, carpete: r.valorCarpete, extras: r.valorExtras,
+    totalBruto: r.totalBruto, descontoPct: r.descPct, descontoValor: r.valorDesconto, taxaPct: r.taxaPct, taxaValor: r.valorTaxa,
+    total: r.final,
+    entradas: inp,
+    resumoCliente: window._clientText || '',
+    parametrosUsados: JSON.stringify(P),
+    criadoPor: DB.user.email || DB.user.uid
+  };
+  const b = document.getElementById('btn-save-est'); b.disabled = true; b.textContent = 'Salvando…';
+  try{ await DB.impl.add(doc); toast('Orçamento salvo no histórico'); }
+  catch(e){ toast('Erro ao salvar: ' + (e.message||e)); }
+  b.disabled = false; b.textContent = 'Salvar orçamento';
+}
+
+async function doLogin(){
+  try{ await DB.impl.signIn(document.getElementById('lg-email').value.trim(), document.getElementById('lg-pass').value); document.getElementById('lg-pass').value=''; }
+  catch(e){ toast('Não foi possível entrar: e-mail ou senha incorretos'); }
+}
+async function doLogout(){ try{ await DB.impl.signOut(); }catch(e){} }
+
+function histRender(){
+  const st = document.getElementById('hist-status'), lg = document.getElementById('hist-login'), mn = document.getElementById('hist-main');
+  lg.style.display = mn.style.display = 'none'; st.innerHTML = '';
+  if(DB.err === 'nao-configurado'){
+    st.innerHTML = '<div class="card"><div class="body"><b>Banco de dados ainda não configurado.</b><br><span class="hint">Preencha o arquivo <code>firebase-config.js</code> com os dados do projeto Firebase para salvar e consultar os orçamentos.</span></div></div>'; return;
+  }
+  if(DB.err && !DB.docs.length){ st.innerHTML = '<div class="card"><div class="body"><b>Erro ao acessar o banco de dados.</b><br><span class="hint">'+esc(DB.err)+'</span></div></div>'; }
+  if(!DB.ready){ st.innerHTML += '<div class="hint">Conectando…</div>'; return; }
+  if(!DB.user){ lg.style.display = 'block'; return; }
+  mn.style.display = 'block';
+  document.getElementById('hist-user').textContent = 'Conectado como ' + (DB.user.email||'');
+  const q = document.getElementById('hist-q').value.trim().toLowerCase();
+  const rows = DB.docs.filter(d=>!q || [d.cliente,d.endereco,d.contato,d.tipo,d.criadoPor].join(' ').toLowerCase().includes(q));
+  document.getElementById('hist-table').innerHTML =
+    '<thead><tr><th>Data</th><th>Cliente</th><th>Serviço</th><th>sq ft</th><th style="text-align:right">Total</th><th>Responsável</th><th></th></tr></thead><tbody>' +
+    (rows.length ? rows.map(d=>`<tr>
+      <td>${esc(fmtDate(d.criadoEm))}</td>
+      <td><b>${esc(d.cliente)}</b><div class="hint">${esc(d.endereco||d.contato||'')}</div></td>
+      <td>${esc(d.tipo)}${d.descontoPct>0?' · −'+d.descontoPct+'%':''}${d.taxaPct>0?' · +'+d.taxaPct+'%':''}</td>
+      <td>${(d.sqft||0).toLocaleString('en-US')}</td>
+      <td style="text-align:right" class="num"><b>$${money(d.total||0)}</b></td>
+      <td>${esc(d.criadoPor||'')}</td>
+      <td><button class="btn btn-ghost" onclick="histOpen('${esc(d.id)}')">Abrir</button></td></tr>`).join('')
+     : '<tr><td colspan="7" class="hint" style="padding:18px">Nenhum orçamento salvo ainda.</td></tr>') + '</tbody>';
+}
+
+function histOpen(id){
+  const d = DB.docs.find(x=>x.id===id); if(!d || !d.entradas) return;
+  showView('calc');
+  setInputs(d.entradas); calc();
+  const note = document.getElementById('loaded-note');
+  const diff = Math.abs((window._lastCalc.final||0) - (d.total||0)) > 0.005;
+  note.textContent = `Orçamento salvo em ${fmtDate(d.criadoEm)} por ${d.criadoPor||'—'}. Valor salvo: $${money(d.total)}.` +
+    (diff ? ` Com os parâmetros atuais o cálculo dá $${money(window._lastCalc.final)}.` : '');
+  note.style.display = 'block';
+}
+
 /* ---------------- Init ---------------- */
 load();
 renderCalcInputs();
 calc();
+dbInit();
+syncNote();
 </script>
 </body>
 </html>
