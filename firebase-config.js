@@ -8,3 +8,8 @@ window.FIREBASE_CONFIG = {
   messagingSenderId: "496051068443",
   appId: "1:496051068443:web:d3cd822e77f17f8391a2be"
 };
+
+// (Opcional) Chave da Google Maps Platform com a API "Street View Static" ativada.
+// Com a chave, o botão "Buscar foto da casa" traz a foto da rua (Street View).
+// Sem a chave, o sistema usa uma imagem de satélite do endereço.
+window.GOOGLE_MAPS_KEY = "";
