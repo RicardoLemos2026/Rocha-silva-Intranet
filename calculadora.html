@@ -328,7 +328,7 @@
             </div>
             <button class="btn btn-ghost" id="btn-photo" onclick="findPhoto()" type="button">Buscar foto da casa</button>
             <div class="hint" id="photo-status" style="margin-top:8px"></div>
-            <div id="photo-box" style="display:none;margin-top:10px"><img id="photo-img" alt="Property" style="width:100%;border-radius:10px;border:1px solid var(--grey-200);display:block"></div>
+            <div id="photo-box" style="display:none;margin-top:10px;position:relative"><img id="photo-img" alt="Property" style="width:100%;border-radius:10px;border:1px solid var(--grey-200);display:block"><div id="photo-pin" style="display:none;position:absolute;left:50%;top:50%;width:34px;height:34px;margin:-17px 0 0 -17px;border:3px solid #FF1257;border-radius:50%;box-shadow:0 0 0 2px #fff,inset 0 0 0 2px #fff;pointer-events:none"></div></div>
           </div>
         </div>
 
@@ -1224,6 +1224,22 @@ async function urlToDataURL(url){
     return await new Promise(res=>{ const fr = new FileReader(); fr.onload = ()=>res(fr.result); fr.onerror = ()=>res(null); fr.readAsDataURL(blob); });
   }catch(e){ return null; }
 }
+function addPin(dataUrl){
+  return new Promise(res=>{
+    const im = new Image();
+    im.onload = ()=>{
+      try{
+        const c = document.createElement('canvas'); c.width = im.naturalWidth; c.height = im.naturalHeight;
+        const g = c.getContext('2d'); g.drawImage(im,0,0);
+        const x = c.width/2, y = c.height/2, r = c.width*0.028;
+        g.lineWidth = c.width*0.012; g.strokeStyle = '#ffffff'; g.beginPath(); g.arc(x,y,r,0,7); g.stroke();
+        g.lineWidth = c.width*0.007; g.strokeStyle = '#FF1257'; g.beginPath(); g.arc(x,y,r,0,7); g.stroke();
+        res(c.toDataURL('image/jpeg',0.92));
+      }catch(e){ res(dataUrl); }
+    };
+    im.onerror = ()=>res(dataUrl); im.src = dataUrl;
+  });
+}
 function dataURLtoBytes(d){ const b = atob(d.split(',')[1]); const u = new Uint8Array(b.length); for(let i=0;i<b.length;i++) u[i]=b.charCodeAt(i); return u; }
 function imgSize(dataUrl){ return new Promise(res=>{ const im = new Image(); im.onload = ()=>res({w:im.naturalWidth,h:im.naturalHeight}); im.onerror = ()=>res(null); im.src = dataUrl; }); }
 function safeName(s){ return (s||'Client').replace(/[^A-Za-z0-9]+/g,'_').replace(/^_|_$/g,'') || 'Client'; }
@@ -1237,7 +1253,8 @@ async function exportPDF(){
   try{
     await ensureLib('jspdf', ()=>window.jspdf && window.jspdf.jsPDF);
     const e = buildEstimateData();
-    const photo = e.photoUrl ? await urlToDataURL(e.photoUrl) : null;
+    let photo = e.photoUrl ? await urlToDataURL(e.photoUrl) : null;
+    if(photo && window._photo.source === 'satellite') photo = await addPin(photo);
     const doc = new window.jspdf.jsPDF({unit:'pt', format:'letter', compress:true});
     const W = 612, M = 48, CW = W - 2*M;
     let y = 44;
@@ -1378,7 +1395,7 @@ async function exportDOCX(){
     await ensureLib('docx', ()=>window.docx && window.docx.Document);
     const e = buildEstimateData();
     let photo = null;
-    if(e.photoUrl){ const d = await urlToDataURL(e.photoUrl); if(d) photo = { data:d, type: d.indexOf('image/png')>0 ? 'png' : 'jpg' }; }
+    if(e.photoUrl){ let d = await urlToDataURL(e.photoUrl); if(d && window._photo.source === 'satellite') d = await addPin(d); if(d) photo = { data:d, type: d.indexOf('image/png')>0 ? 'png' : 'jpg' }; }
     const blob = await buildDocx(window.docx, e, photo);
     downloadBlob(blob, `Estimate_${safeName(e.client.name)}_${e.fileDate}.docx`);
     toast('Word file downloaded');
@@ -1391,6 +1408,7 @@ window._photo = { url:'', source:'' };
 function setPhoto(url, source, msg){
   window._photo = { url: url||'', source: source||'' };
   const box = document.getElementById('photo-box'), img = document.getElementById('photo-img'), st = document.getElementById('photo-status');
+  document.getElementById('photo-pin').style.display = (source === 'satellite') ? 'block' : 'none';
   if(url){ img.src = url; box.style.display = 'block'; } else { img.removeAttribute('src'); box.style.display = 'none'; }
   st.textContent = msg || '';
 }
@@ -1409,7 +1427,7 @@ async function lookupZip(){
 }
 function esriSatUrl(lat, lon){
   const R = 6378137, x = lon*Math.PI/180*R, y = Math.log(Math.tan(Math.PI/4 + lat*Math.PI/360))*R;
-  const hw = 70/Math.cos(lat*Math.PI/180), hh = hw*400/640;
+  const hw = 40/Math.cos(lat*Math.PI/180), hh = hw*400/640;
   return `https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/export?bbox=${x-hw},${y-hh},${x+hw},${y+hh}&bboxSR=3857&imageSR=3857&size=640,400&format=jpg&f=image`;
 }
 async function findPhoto(){
