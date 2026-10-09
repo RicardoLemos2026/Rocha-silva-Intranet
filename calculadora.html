@@ -1,0 +1,1107 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<script src="firebase-config.js"></script>
+<script src="auth-gate.js"></script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Precificação · Rocha Silva Cleaning</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --navy:#05244F; --navymed:#273A76; --blue:#3C58B4; --orange:#FF5B00;
+    --white:#FFFFFF; --ink:#0d1b2f;
+    --grey-050:#F5F7FA; --grey-100:#EDF1F6; --grey-200:#DDE4EE; --grey-300:#C3CDDC;
+    --grey-500:#7A889E; --grey-600:#5A6B85;
+    --ok:#1f8a54; --warn:#c2410c;
+    --shadow:0 1px 2px rgba(5,36,79,.06), 0 8px 24px rgba(5,36,79,.06);
+    --radius:14px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{-webkit-text-size-adjust:100%}
+  body{
+    font-family:'Inter',system-ui,sans-serif; color:var(--ink);
+    background:var(--grey-050); line-height:1.45; font-size:14px;
+  }
+  .num{font-family:'Space Grotesk','Inter',sans-serif; font-feature-settings:"tnum" 1; font-variant-numeric:tabular-nums}
+
+  /* ---------- Top bar ---------- */
+  header{
+    background:var(--navy); color:#fff; position:sticky; top:0; z-index:20;
+    box-shadow:0 2px 20px rgba(5,36,79,.25);
+  }
+  .bar{max-width:1180px; margin:0 auto; padding:0 22px; display:flex; align-items:center; gap:26px; height:62px}
+  .wordmark{font-family:'Space Grotesk'; font-weight:700; font-size:18px; letter-spacing:-.2px; flex-shrink:0}
+  .prod{margin-left:2px; padding-left:20px; border-left:1px solid rgba(255,255,255,.16); font-size:13px; color:#aebbd6; display:flex; flex-direction:column; line-height:1.2}
+  .prod b{color:#fff; font-weight:600; font-size:14px}
+  nav{margin-left:auto; display:flex; gap:4px; background:rgba(255,255,255,.07); padding:4px; border-radius:11px}
+  nav button{
+    font:inherit; font-weight:600; font-size:13px; color:#c3cee6; background:none; border:0;
+    padding:8px 16px; border-radius:8px; cursor:pointer; transition:.15s;
+  }
+  nav button:hover{color:#fff}
+  nav button.active{background:var(--white); color:var(--navy)}
+
+  main{max-width:1180px; margin:0 auto; padding:26px 22px 60px}
+  .view{display:none; animation:fade .25s ease}
+  .view.active{display:block}
+  @keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+  h2.section{font-size:12px; letter-spacing:1.4px; text-transform:uppercase; color:var(--blue); font-weight:700; margin-bottom:12px; display:flex; align-items:center; gap:9px}
+  h2.section::before{content:""; width:16px; height:2px; background:var(--orange); display:inline-block}
+
+  /* ---------- Cards / grid ---------- */
+  .grid{display:grid; grid-template-columns:minmax(0,1fr) 400px; gap:22px; align-items:start}
+  .inputs{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:18px; align-items:start}
+  .inputs > .card{margin:0 !important}
+  .inputs .span2{grid-column:1 / -1}
+  .results{position:sticky; top:78px; max-height:calc(100vh - 220px); min-height:260px; overflow-y:auto; padding-right:4px; scrollbar-width:thin}
+  .results .hero{margin-bottom:12px; padding:18px 22px}
+  .results .hero .price{font-size:44px}
+  .results .estimate-note{display:none !important}
+  #price-bar{display:none}
+  .card{background:#fff; border:1px solid var(--grey-200); border-radius:var(--radius); box-shadow:var(--shadow)}
+  .card .head{padding:16px 20px; border-bottom:1px solid var(--grey-100); display:flex; align-items:center; justify-content:space-between}
+  .card .head h3{font-size:15px; color:var(--navy)}
+  .card .body{padding:18px 20px}
+
+  /* ---------- Inputs ---------- */
+  .field{margin-bottom:15px}
+  .field:last-child{margin-bottom:0}
+  .field label{display:block; font-size:12px; font-weight:600; color:var(--grey-500); margin-bottom:6px}
+  .field .hint{font-size:11px; color:var(--grey-500); font-weight:400; margin-top:5px}
+  .field .hint.muted{color:var(--grey-300)}
+  input[type=number], input[type=text], select{
+    width:100%; font:inherit; font-size:15px; font-weight:600; color:var(--ink);
+    background:var(--grey-050); border:1.5px solid var(--grey-200); border-radius:10px;
+    padding:11px 13px; transition:.15s; -moz-appearance:textfield;
+  }
+  input:focus, select:focus{outline:none; border-color:var(--orange); background:#fff; box-shadow:0 0 0 4px rgba(255,91,0,.12)}
+  select:disabled, input:disabled{opacity:.45; cursor:not-allowed}
+  .inline{display:flex; gap:10px}
+  .inline .field{flex:1; margin-bottom:15px}
+
+  /* Toggle rows for yes/no extras */
+  .toggle-grid{display:grid; grid-template-columns:1fr 1fr; gap:10px}
+  .toggle-cell{display:flex; align-items:center; justify-content:space-between; gap:10px; background:var(--grey-050); border:1.5px solid var(--grey-200); border-radius:10px; padding:10px 13px; transition:.15s; cursor:pointer}
+  .toggle-cell:hover{border-color:var(--grey-300)}
+  .toggle-cell.on{background:rgba(255,91,0,.08); border-color:var(--orange)}
+  .toggle-cell .t-label{font-size:13px; font-weight:600; color:var(--ink)}
+  .toggle-cell .t-val{font-size:11px; color:var(--grey-500); font-weight:600}
+  .switch{position:relative; width:38px; height:22px; border-radius:20px; background:var(--grey-300); flex-shrink:0; transition:.15s}
+  .switch::after{content:""; position:absolute; top:2px; left:2px; width:18px; height:18px; border-radius:50%; background:#fff; transition:.15s; box-shadow:0 1px 2px rgba(0,0,0,.25)}
+  .toggle-cell.on .switch{background:var(--orange)}
+  .toggle-cell.on .switch::after{left:18px}
+  .toggle-cell input{display:none}
+
+  input[type=number]::-webkit-outer-spin-button, input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+
+  /* Carpete rows */
+  .carpet-row{display:flex; align-items:center; gap:12px; padding:9px 0; border-bottom:1px solid var(--grey-100)}
+  .carpet-row:last-child{border-bottom:0}
+  .carpet-row .c-label{flex:1; font-size:13px; font-weight:600; color:var(--ink)}
+  .carpet-row .c-price{font-size:11.5px; color:var(--grey-500); width:70px; text-align:right}
+  .carpet-row input{width:70px; text-align:center; padding:8px 6px; font-size:14px}
+
+  /* ---------- Result readout ---------- */
+  .hero{background:linear-gradient(135deg,var(--navy),var(--navymed)); border-radius:var(--radius); padding:22px 24px; color:#fff; box-shadow:var(--shadow); margin-bottom:20px}
+  .hero .lead{display:flex; justify-content:space-between; align-items:flex-end; gap:16px; flex-wrap:wrap}
+  .hero .lead .lbl{font-size:12px; letter-spacing:1px; text-transform:uppercase; color:#9fb0d4; font-weight:600}
+  .hero .price{font-family:'Space Grotesk'; font-size:52px; font-weight:700; line-height:1; letter-spacing:-1px}
+  .hero .price small{font-size:22px; color:#9fb0d4; font-weight:600; margin-right:4px}
+  .hero .sub{font-size:13px; color:#c3cee6; margin-top:4px}
+  .hero .estimate-note{margin-top:16px; padding-top:14px; border-top:1px solid rgba(255,255,255,.14); font-size:12.5px; color:#aebbd6; display:flex; gap:8px; align-items:flex-start}
+
+  table.breakdown{width:100%; border-collapse:collapse; background:#fff; border:1px solid var(--grey-200); border-radius:var(--radius); overflow:hidden; box-shadow:var(--shadow)}
+  table.breakdown th, table.breakdown td{padding:11px 16px; text-align:left; font-size:13.5px; border-bottom:1px solid var(--grey-100)}
+  table.breakdown thead th{background:var(--grey-050); color:var(--navy); font-weight:700; font-size:11.5px; text-transform:uppercase; letter-spacing:.4px; border-bottom:2px solid var(--grey-200)}
+  table.breakdown td.val{text-align:right; font-family:'Space Grotesk'; font-variant-numeric:tabular-nums; white-space:nowrap}
+  table.breakdown tbody tr:last-child td{border-bottom:0}
+  table.breakdown tr.subtotal td{font-weight:700; color:var(--navy); background:var(--grey-050)}
+  table.breakdown tr.final td{font-family:'Space Grotesk'; font-weight:700; font-size:18px; color:var(--navy); background:#EAF0FF}
+  table.breakdown tr.muted td{color:var(--grey-500); font-style:italic}
+
+  /* ---------- Guide ---------- */
+  .guide{max-width:860px}
+  .guide-hero{background:linear-gradient(135deg,var(--navy),var(--navymed)); border-radius:var(--radius); padding:26px 28px; color:#fff; box-shadow:var(--shadow); margin-bottom:22px}
+  .guide-hero h1{font-size:22px; font-weight:700; margin-bottom:6px}
+  .guide-hero p{font-size:14px; color:#c3cee6; max-width:640px}
+  .g-card{background:#fff; border:1px solid var(--grey-200); border-radius:var(--radius); box-shadow:var(--shadow); padding:22px 26px; margin-bottom:18px}
+  .g-card h3{font-size:16px; color:var(--navy); margin-bottom:14px; display:flex; align-items:center; gap:10px}
+  .g-card h3 .ic{width:26px; height:26px; border-radius:8px; background:rgba(255,91,0,.12); color:var(--orange); display:grid; place-items:center; font-size:15px; font-weight:700; flex-shrink:0}
+  .g-card p{font-size:14px; margin-bottom:10px; color:var(--ink)}
+  .g-card p:last-child{margin-bottom:0}
+  .steps{counter-reset:s; list-style:none}
+  .steps li{position:relative; padding-left:38px; margin-bottom:14px; font-size:14px}
+  .steps li:last-child{margin-bottom:0}
+  .steps li::before{counter-increment:s; content:counter(s); position:absolute; left:0; top:-1px; width:26px; height:26px; border-radius:50%; background:var(--navy); color:#fff; font-family:'Space Grotesk'; font-weight:700; font-size:13px; display:grid; place-items:center}
+  .formula{background:var(--navy); border-radius:12px; padding:20px 22px; margin:14px 0; color:#fff; text-align:center; line-height:1.9}
+  .formula .eq{font-family:'Space Grotesk'; font-size:14px; font-weight:600; display:flex; flex-wrap:wrap; align-items:center; justify-content:center; gap:8px}
+  .formula .tok{padding:5px 11px; border-radius:8px; font-size:12.5px; white-space:nowrap}
+  .formula .base{background:var(--orange)}
+  .formula .adj{background:var(--blue)}
+  .formula .extra{background:rgba(255,255,255,.16)}
+  .formula .op{color:#9fb0d4; font-size:18px}
+  .formula .cap{display:block; font-size:12px; color:#9fb0d4; margin-top:12px; font-family:'Inter'}
+  .g-flow{display:flex; flex-direction:column; gap:10px; margin-top:4px}
+  .g-step{display:flex; gap:14px; align-items:flex-start; padding:13px 16px; background:var(--grey-050); border:1px solid var(--grey-100); border-radius:11px; border-left:3px solid var(--orange)}
+  .g-step .n{font-family:'Space Grotesk'; font-weight:700; color:var(--orange); font-size:15px; flex-shrink:0}
+  .g-step .t{font-size:13.5px}
+  .g-step .t b{color:var(--navy)}
+  .g-note{background:rgba(255,91,0,.07); border:1px solid rgba(255,91,0,.2); border-radius:11px; padding:14px 16px; font-size:13px; color:var(--ink); display:flex; gap:10px; align-items:flex-start}
+  .g-note b{color:var(--warn)}
+  .ex-table{width:100%; border-collapse:collapse; margin-top:12px; font-size:13px}
+  .ex-table th,.ex-table td{padding:9px 12px; text-align:left; border-bottom:1px solid var(--grey-100)}
+  .ex-table thead th{background:var(--grey-050); color:var(--navy); font-weight:700; font-size:11px; text-transform:uppercase; letter-spacing:.4px}
+  .ex-table td.n{font-family:'Space Grotesk'; font-variant-numeric:tabular-nums; text-align:right}
+  .ex-table tr.total td{font-weight:700; color:var(--navy); border-top:2px solid var(--grey-200)}
+
+  .client-box{margin-top:20px; background:#fff; border:1px dashed var(--grey-300); border-radius:var(--radius); padding:18px 20px}
+  .client-box h4{font-size:12px; letter-spacing:1px; text-transform:uppercase; color:var(--blue); margin-bottom:10px; font-weight:700}
+  .client-box .text{font-size:14px; line-height:1.7; color:var(--ink); white-space:pre-wrap}
+  .client-box .copy{margin-top:12px; font:inherit; font-size:12.5px; font-weight:600; color:var(--navy); background:var(--grey-050); border:1.5px solid var(--grey-200); border-radius:9px; padding:8px 14px; cursor:pointer; transition:.15s}
+  .client-box .copy:hover{background:var(--navy); color:#fff; border-color:var(--navy)}
+
+  /* ---------- Parameters ---------- */
+  .p-section{margin-bottom:26px}
+  .p-head{display:flex; align-items:center; justify-content:space-between; margin-bottom:12px}
+  .p-head p{font-size:12.5px; color:var(--grey-500); margin-top:3px}
+  .btn{font:inherit; font-weight:600; font-size:13px; border-radius:9px; padding:9px 15px; cursor:pointer; border:1.5px solid transparent; transition:.15s; display:inline-flex; align-items:center; gap:6px}
+  .btn-primary{background:var(--orange); color:#fff}
+  .btn-primary:hover{background:#e64f00}
+  .btn-ghost{background:#fff; color:var(--navy); border-color:var(--grey-200)}
+  .btn-ghost:hover{border-color:var(--navy)}
+
+  .cost-grid{display:grid; grid-template-columns:repeat(4,1fr); gap:14px}
+  .cost-cell{background:#fff; border:1px solid var(--grey-200); border-radius:12px; padding:14px 16px; box-shadow:var(--shadow)}
+  .cost-cell label{display:block; font-size:12px; font-weight:600; color:var(--grey-500); margin-bottom:7px}
+  .cost-cell .with-unit{position:relative}
+  .cost-cell .with-unit .unit{position:absolute; left:13px; top:50%; transform:translateY(-50%); font-size:14px; font-weight:600; color:var(--grey-500)}
+  .cost-cell .with-unit input{padding-left:28px}
+  .cost-cell.unit-pct .unit{left:auto; right:13px}
+  .cost-cell.unit-pct input{padding-left:13px; padding-right:30px}
+
+  table.params{width:100%; border-collapse:collapse; background:#fff; border:1px solid var(--grey-200); border-radius:var(--radius); overflow:hidden; box-shadow:var(--shadow)}
+  table.params th, table.params td{padding:10px 12px; text-align:left; font-size:13px; border-bottom:1px solid var(--grey-100)}
+  table.params thead th{background:var(--grey-050); color:var(--navy); font-weight:700; font-size:11px; text-transform:uppercase; letter-spacing:.4px}
+  table.params tbody tr:last-child td{border-bottom:0}
+  table.params input, table.params select{padding:8px 10px; font-size:13px; background:#fff; border-color:var(--grey-200)}
+  table.params .row-num{font-family:'Space Grotesk'; color:var(--grey-500); font-weight:600; width:34px; text-align:center}
+
+  .toolbar{display:flex; gap:10px; align-items:center; margin-bottom:22px; padding:14px 18px; background:#fff; border:1px solid var(--grey-200); border-radius:12px; box-shadow:var(--shadow)}
+  .toolbar .status{font-size:12.5px; color:var(--grey-500); margin-left:auto; display:flex; align-items:center; gap:7px}
+  .dot{width:8px; height:8px; border-radius:50%; background:var(--ok)}
+
+  footer{max-width:1180px; margin:0 auto; padding:22px; text-align:center; font-size:11.5px; color:var(--grey-500)}
+  .toast{position:fixed; bottom:24px; left:50%; transform:translateX(-50%) translateY(20px); background:var(--navy); color:#fff; padding:12px 22px; border-radius:11px; font-size:13.5px; font-weight:600; box-shadow:0 12px 30px rgba(5,36,79,.35); opacity:0; pointer-events:none; transition:.25s; z-index:50}
+  .toast.show{opacity:1; transform:translateX(-50%) translateY(0)}
+
+  @media(max-width:900px){
+    .grid{grid-template-columns:1fr}
+    .inputs{grid-template-columns:1fr}
+    .results{position:static; max-height:none; overflow:visible}
+    body[data-view="calc"] #price-bar{display:flex}
+    body[data-view="calc"] main{padding-bottom:90px}
+    #rs-userbar{bottom:72px !important}
+    .cost-grid{grid-template-columns:1fr 1fr}
+    .toggle-grid{grid-template-columns:1fr}
+    .bar{gap:14px}
+    .prod{display:none}
+    table.breakdown{display:block; overflow-x:auto}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="bar">
+    <div class="wordmark">Rocha Silva Cleaning</div>
+    <div class="prod">
+      <b>Precificação</b>
+      Estimativa de orçamento
+    </div>
+    <nav>
+      <button id="tab-guide" class="active" onclick="showView('guide')">Instruções</button>
+      <button id="tab-calc" onclick="showView('calc')">Calculadora</button>
+      <button id="tab-hist" onclick="showView('hist')">Histórico</button>
+      <button id="tab-params" onclick="showView('params')">Parâmetros</button>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <!-- ============ INSTRUÇÕES ============ -->
+  <section id="view-guide" class="view active">
+    <div class="guide">
+      <div class="guide-hero">
+        <h1>Como usar a calculadora</h1>
+        <p>Ferramenta para estimar o preço de uma limpeza residencial a partir do tipo de serviço, metragem e opções do imóvel. Preencha a aba Calculadora e o preço final é atualizado automaticamente a cada alteração.</p>
+      </div>
+
+      <div class="g-card">
+        <h3><span class="ic">1</span> Passo a passo</h3>
+        <ol class="steps">
+          <li>Abra a aba <b>Calculadora</b>.</li>
+          <li>Escolha o <b>Tipo de Serviço</b> (Regular, Deep ou Move In/Out) e informe a <b>metragem</b> da casa (sq ft).</li>
+          <li>Selecione a <b>Condição</b> do imóvel e, se o serviço for Regular, a <b>Frequência</b> da limpeza — ela só afeta o preço quando o serviço é Regular.</li>
+          <li>Se quiser, informe o Desconto manual (%) e/ou a Taxa manual (%), aplicados sobre o valor total.</li>
+          <li>Marque as áreas extras que se aplicam (porão, banheiro no porão, garagem, pets) e os extras avulsos (geladeira, forno, armários, rodapés, janelas).</li>
+          <li>Se o cliente tiver carpete, informe a quantidade de cada tipo de cômodo/peça — o valor é somado por unidade.</li>
+          <li>O preço final aparece em destaque, com o detalhamento completo logo abaixo. Use o botão de copiar no resumo para enviar o orçamento ao cliente.</li>
+        </ol>
+      </div>
+
+      <div class="g-card">
+        <h3><span class="ic">2</span> Como o cálculo é feito</h3>
+        <p>O preço começa por uma <b>faixa de metragem</b>, que define o preço base de acordo com o tipo de serviço. A esse valor somam-se os adicionais fixos escolhidos:</p>
+        <div class="formula">
+          <div class="eq">
+            <span class="tok base">preço base (faixa × tipo)</span>
+            <span class="op">+</span>
+            <span class="tok extra">porão / banheiro / garagem / pets</span>
+            <span class="op">+</span>
+            <span class="tok extra">extras avulsos</span>
+            <span class="op">+</span>
+            <span class="tok adj">condição</span>
+            <span class="op">=</span>
+            <span class="tok base">subtotal da limpeza</span>
+          </div>
+          <span class="cap">Depois, a frequência ajusta esse subtotal (só para Regular) e o carpete é somado por fora.</span>
+        </div>
+        <div class="g-flow">
+          <div class="g-step"><span class="n">A</span><span class="t"><b>Preço base</b> — a metragem define a faixa, e cada faixa tem um preço próprio para Regular, Deep e Move In/Out. É o ponto de partida de tudo.</span></div>
+          <div class="g-step"><span class="n">B</span><span class="t"><b>Condição</b> — Light, Standard, Heavy ou Very Heavy somam um valor fixo em dólares ao subtotal, independente do tipo de serviço.</span></div>
+          <div class="g-step"><span class="n">C</span><span class="t"><b>Áreas extras</b> — porão (Finished ou Unfinished), banheiro no porão, garagem e pets cada um soma um valor fixo quando marcado. A garagem custa $100 no Deep Clean (editável em Parâmetros) e $50 nos demais.</span></div>
+          <div class="g-step"><span class="n">D</span><span class="t"><b>Extras avulsos</b> — geladeira, forno, armários, rodapés e janelas são independentes entre si; cada um marcado soma seu valor fixo.</span></div>
+          <div class="g-step"><span class="n">E</span><span class="t"><b>Frequência</b> — Weekly, Biweekly, Monthly e One Time aplicam um percentual sobre o subtotal, <b>mas somente quando o Tipo de Serviço é Regular</b>. Para Deep e Move In/Out, a frequência não altera o preço.</span></div>
+          <div class="g-step"><span class="n">F</span><span class="t"><b>Carpete</b> — cada tipo de cômodo/peça tem um valor por unidade; multiplica-se a quantidade informada pelo valor e soma-se tudo ao preço final, por fora do subtotal e da frequência.</span></div>
+        </div>
+      </div>
+
+      <div class="g-card">
+        <h3><span class="ic">3</span> Exemplo — Regular, casa de 1.500 sq ft</h3>
+        <p>Casa de 1.500 sq ft, serviço Regular, condição Standard, frequência Biweekly, com garagem e janelas:</p>
+        <table class="ex-table">
+          <thead><tr><th>Etapa</th><th style="text-align:right">Valor</th></tr></thead>
+          <tbody>
+            <tr><td>Preço base (faixa 1001–1800, Regular)</td><td class="n">$150,00</td></tr>
+            <tr><td>Condição (Standard)</td><td class="n">+$40,00</td></tr>
+            <tr><td>Garagem</td><td class="n">+$50,00</td></tr>
+            <tr><td>Janelas</td><td class="n">+$120,00</td></tr>
+            <tr class="total"><td>Subtotal da limpeza</td><td class="n">$360,00</td></tr>
+            <tr><td>Ajuste de frequência (Biweekly, −10%)</td><td class="n">−$36,00</td></tr>
+            <tr class="total"><td>Preço final</td><td class="n">$324,00</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="g-card">
+        <h3><span class="ic">4</span> Ajustando as regras</h3>
+        <p>A aba <b>Parâmetros</b> concentra todos os valores usados no cálculo: faixas de metragem com preço por tipo de serviço, condição, frequência, áreas extras, extras avulsos e valores de carpete por unidade.</p>
+        <p>As alterações ficam salvas no navegador ao clicar em <b>Salvar Parâmetros</b>. O botão <b>Restaurar Padrão</b> volta tudo aos valores originais da planilha.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ CALCULADORA ============ -->
+  <section id="view-calc" class="view">
+    <div class="grid">
+      <!-- INPUTS -->
+      <div class="inputs">
+        <div class="card" style="margin-bottom:18px">
+          <div class="head"><h3>Cliente</h3></div>
+          <div class="body">
+            <div class="field"><label for="i-cli-nome">Nome do cliente</label>
+              <input type="text" id="i-cli-nome" placeholder="Ex.: Maria Silva"></div>
+            <div class="field"><label for="i-cli-contato">Telefone / e-mail</label>
+              <input type="text" id="i-cli-contato"></div>
+            <div class="field"><label for="i-cli-end">Endereço</label>
+              <input type="text" id="i-cli-end"></div>
+            <div class="field"><label for="i-cli-obs">Observações</label>
+              <input type="text" id="i-cli-obs"></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="head"><h3>Dados do serviço</h3></div>
+          <div class="body">
+            <div class="field">
+              <label for="i-tipo">Tipo de Serviço</label>
+              <select id="i-tipo" onchange="onTipoChange()">
+                <option value="Regular">Regular</option>
+                <option value="Deep">Deep</option>
+                <option value="Move In/Out">Move In/Out</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="i-sqft">Metragem (sq ft)</label>
+              <input type="number" id="i-sqft" value="1500" min="0" step="50" oninput="calc()">
+            </div>
+            <div class="field">
+              <label for="i-condicao">Condição</label>
+              <select id="i-condicao" onchange="calc()"></select>
+            </div>
+            <div class="field">
+              <label for="i-freq">Frequência <span id="freq-tag" class="hint"></span></label>
+              <select id="i-freq" onchange="calc()"></select>
+              <div class="hint" id="freq-hint">Aplica-se apenas ao Regular.</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:18px">
+          <div class="head"><h3>Ajustes manuais</h3></div>
+          <div class="body">
+            <div class="field">
+              <label for="i-desc">Desconto manual (%)</label>
+              <input type="number" id="i-desc" min="0" step="0.1" value="0" oninput="calc()">
+              <div class="hint">Percentual descontado sobre o valor total.</div>
+            </div>
+            <div class="field">
+              <label for="i-taxa">Taxa manual (%)</label>
+              <input type="number" id="i-taxa" min="0" step="0.1" value="0" oninput="calc()">
+              <div class="hint">Percentual acrescentado sobre o valor total.</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:18px">
+          <div class="head"><h3>Áreas extras</h3></div>
+          <div class="body">
+            <div class="field">
+              <label for="i-porao">Porão</label>
+              <select id="i-porao" onchange="calc()">
+                <option value="nenhum">Nenhum</option>
+                <option value="finished">Finished</option>
+                <option value="unfinished">Unfinished</option>
+              </select>
+            </div>
+            <div class="toggle-grid" id="toggle-areas"></div>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:18px">
+          <div class="head"><h3>Extras avulsos</h3></div>
+          <div class="body">
+            <div class="toggle-grid" id="toggle-extras"></div>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:18px">
+          <div class="head"><h3>Carpete</h3></div>
+          <div class="body" id="carpet-list"></div>
+        </div>
+      </div>
+
+      <!-- RESULTS -->
+      <div class="results" id="results-col">
+        <div class="hero">
+          <div class="lead">
+            <div>
+              <div class="lbl" id="hero-label">Preço Final estimado</div>
+              <div class="price"><small>US$</small><span id="hero-price" class="num">—</span></div>
+              <div class="sub" id="hero-sub">—</div>
+            </div>
+          </div>
+          <div class="estimate-note">
+            <span>◈</span>
+            <span>Orçamento calculado em tempo real a partir dos parâmetros atuais. Qualquer alteração nos campos acima ou na aba Parâmetros recalcula o preço imediatamente.</span>
+          </div>
+        </div>
+
+        <div id="sync-note" class="hint" style="display:none;margin-bottom:12px;padding:10px 14px;background:#FDECEC;border:1px solid #F3B9B9;border-radius:10px;color:#8a1f1f"></div>
+        <div id="loaded-note" class="hint" style="display:none;margin-bottom:12px;padding:10px 14px;background:#FFF6E5;border:1px solid #F5D9A0;border-radius:10px;color:#7a5200"></div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:20px">
+          <button class="btn btn-primary" id="btn-save-est" onclick="saveEstimate()">Salvar orçamento</button>
+          <button class="btn btn-ghost" onclick="newEstimate()">Novo orçamento</button>
+        </div>
+
+        <h2 class="section">Detalhamento</h2>
+        <table class="breakdown" id="breakdown-table"></table>
+
+        <div class="client-box">
+          <h4>Resumo para passar ao cliente</h4>
+          <div class="text" id="client-text">—</div>
+          <button class="copy" onclick="copyClient()">Copiar texto</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ HISTÓRICO ============ -->
+  <section id="view-hist" class="view">
+    <div style="max-width:1100px;margin:0 auto;padding:24px 20px">
+      <div id="hist-status"></div>
+      <div id="hist-login" class="card" style="display:none;max-width:420px;margin-bottom:18px">
+        <div class="head"><h3>Entrar</h3></div>
+        <div class="body">
+          <div class="field"><label for="lg-email">E-mail</label><input type="text" id="lg-email" autocomplete="username"></div>
+          <div class="field"><label for="lg-pass">Senha</label><input type="password" id="lg-pass" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()"></div>
+          <button class="btn btn-primary" onclick="doLogin()">Entrar</button>
+        </div>
+      </div>
+      <div id="hist-main" style="display:none">
+        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:14px">
+          <input type="text" id="hist-q" placeholder="Buscar por cliente, endereço, tipo…" oninput="histRender()" style="max-width:340px">
+          <span id="hist-user" class="hint" style="margin-left:auto"></span>
+          <button class="btn btn-ghost" onclick="doLogout()" id="btn-logout">Sair</button>
+        </div>
+        <table class="params" id="hist-table"></table>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ PARÂMETROS ============ -->
+  <section id="view-params" class="view">
+    <div class="toolbar">
+      <button class="btn btn-primary" onclick="saveParams()">Salvar Parâmetros</button>
+      <button class="btn btn-ghost" onclick="resetParams()">Restaurar Padrão</button>
+      <div class="status"><span class="dot"></span><span id="save-status">Parâmetros carregados</span></div>
+    </div>
+
+    <!-- Faixas de metragem -->
+    <div class="p-section">
+      <div class="p-head">
+        <div><h2 class="section" style="margin:0">Faixas de Metragem e Preço Base</h2>
+        <p>Preço base por faixa de metragem, de acordo com o tipo de serviço.</p></div>
+      </div>
+      <table class="params" id="band-table"></table>
+    </div>
+
+    <!-- Condição -->
+    <div class="p-section">
+      <div class="p-head">
+        <div><h2 class="section" style="margin:0">Condição</h2>
+        <p>Valor fixo somado ao subtotal, independente do tipo de serviço.</p></div>
+      </div>
+      <div class="cost-grid" id="condicao-grid"></div>
+    </div>
+
+    <!-- Frequência -->
+    <div class="p-section">
+      <div class="p-head">
+        <div><h2 class="section" style="margin:0">Frequência</h2>
+        <p>Percentual aplicado sobre o subtotal — aplica-se apenas quando o Tipo de Serviço é Regular.</p></div>
+      </div>
+      <div class="cost-grid" id="freq-grid"></div>
+    </div>
+
+    <!-- Áreas extras -->
+    <div class="p-section">
+      <div class="p-head">
+        <div><h2 class="section" style="margin:0">Áreas Extras</h2>
+        <p>Valores fixos de porão, banheiro no porão, garagem e pets.</p></div>
+      </div>
+      <div class="cost-grid" id="areas-grid"></div>
+    </div>
+
+    <!-- Extras avulsos -->
+    <div class="p-section">
+      <div class="p-head">
+        <div><h2 class="section" style="margin:0">Extras Avulsos</h2>
+        <p>Valores fixos independentes entre si.</p></div>
+      </div>
+      <div class="cost-grid" id="extras-grid"></div>
+    </div>
+
+    <!-- Carpete -->
+    <div class="p-section">
+      <div class="p-head">
+        <div><h2 class="section" style="margin:0">Carpete (valor por unidade)</h2>
+        <p>Multiplicado pela quantidade informada na Calculadora.</p></div>
+      </div>
+      <div class="cost-grid" id="carpete-grid"></div>
+    </div>
+  </section>
+</main>
+
+<footer>Precificação · Rocha Silva Cleaning — ferramenta interna de orçamento</footer>
+<div class="toast" id="toast"></div>
+
+<script src="firebase-config.js"></script>
+<div id="price-bar" style="position:fixed;left:0;right:0;bottom:0;z-index:50;background:var(--navy);color:#fff;padding:10px 16px;align-items:center;justify-content:space-between;gap:12px;box-shadow:0 -4px 16px rgba(5,36,79,.3)">
+  <div><div style="font-size:10.5px;letter-spacing:.8px;text-transform:uppercase;color:#9fb0d4;font-weight:600">Preço final</div>
+  <div style="font-family:'Space Grotesk',sans-serif;font-size:24px;font-weight:700;line-height:1.1">US$ <span id="bar-price">—</span></div></div>
+  <button class="btn btn-primary" onclick="document.getElementById('results-col').scrollIntoView({behavior:'smooth'})">Ver detalhes</button>
+</div>
+<script>
+/* ---------------- Default parameters ---------------- */
+const DEFAULTS = {
+  bands:[
+    {de:0,    ate:1000,  regular:120, deep:350,    move:404},
+    {de:1001, ate:1800,  regular:150, deep:402.5,  move:561},
+    {de:1801, ate:2500,  regular:250, deep:638.76, move:663},
+    {de:2501, ate:3200,  regular:350, deep:1050,   move:765},
+    {de:3201, ate:4000,  regular:450, deep:1207.5, move:867},
+    {de:4001, ate:99999, regular:550, deep:1388.62,move:969},
+  ],
+  condicao:[
+    {key:'light',     label:'Light',      value:0},
+    {key:'standard',  label:'Standard',   value:40},
+    {key:'heavy',     label:'Heavy',      value:60},
+    {key:'veryheavy', label:'Very Heavy', value:100},
+  ],
+  freq:[
+    {key:'weekly',   label:'Weekly',   pct:-0.20},
+    {key:'biweekly', label:'Biweekly', pct:-0.10},
+    {key:'monthly',  label:'Monthly',  pct:0.03},
+    {key:'onetime',  label:'One Time', pct:0.15},
+  ],
+  porao:{ finished:40, unfinished:25 },
+  banheiroPorao:20,
+  garagem:50,
+  garagemDeep:100,
+  pets:25,
+  extras:[
+    {key:'fridge',     label:'Fridge',     value:55},
+    {key:'oven',       label:'Oven',       value:50},
+    {key:'cabinets',   label:'Cabinets',   value:85},
+    {key:'baseboards', label:'Baseboards', value:95},
+    {key:'windows',    label:'Windows',    value:120},
+  ],
+  carpete:[
+    {key:'qp',    label:'Quarto Pequeno',     value:45},
+    {key:'qg',    label:'Quarto Grande',      value:60},
+    {key:'se',    label:'Sala de Estar',      value:60},
+    {key:'sj',    label:'Sala de Jantar',     value:60},
+    {key:'cor',   label:'Corredor',           value:35},
+    {key:'deg',   label:'Degrau',             value:7},
+    {key:'sofa',  label:'Sofá — assento',     value:25},
+  ]
+};
+
+const TIPO_KEY = { 'Regular':'regular', 'Deep':'deep', 'Move In/Out':'move' };
+const KEY = "rochaSilvaPricingParams";
+let P;
+
+function load(){
+  try{
+    // Com Firebase configurado, a tabela vem do banco compartilhado (não do navegador).
+    const s = window.FIREBASE_CONFIG ? null : localStorage.getItem(KEY);
+    applySaved(s ? JSON.parse(s) : null);
+  }catch(e){ P = structuredClone(DEFAULTS); }
+}
+function applySaved(saved){
+  try{
+    P = structuredClone(DEFAULTS);
+    if(saved){
+      if(Array.isArray(saved.bands)) P.bands = saved.bands;
+      if(Array.isArray(saved.condicao)) P.condicao = saved.condicao;
+      if(Array.isArray(saved.freq)) P.freq = saved.freq;
+      if(saved.porao) P.porao = Object.assign({}, P.porao, saved.porao);
+      if(typeof saved.banheiroPorao === 'number') P.banheiroPorao = saved.banheiroPorao;
+      if(typeof saved.garagem === 'number') P.garagem = saved.garagem;
+      if(typeof saved.garagemDeep === 'number') P.garagemDeep = saved.garagemDeep;
+      if(typeof saved.pets === 'number') P.pets = saved.pets;
+      if(Array.isArray(saved.extras)) P.extras = saved.extras;
+      if(Array.isArray(saved.carpete)) P.carpete = saved.carpete;
+    }
+  }catch(e){ P = structuredClone(DEFAULTS); }
+}
+function persist(){ if(window.FIREBASE_CONFIG) return; try{ localStorage.setItem(KEY, JSON.stringify(P)); }catch(e){} }
+
+/* ---------------- Navigation ---------------- */
+function showView(v){
+  document.querySelectorAll('.view').forEach(el=>el.classList.remove('active'));
+  document.getElementById('view-'+v).classList.add('active');
+  document.body.dataset.view = v;
+  ['guide','calc','hist','params'].forEach(x=>
+    document.getElementById('tab-'+x).classList.toggle('active', v===x));
+  if(v==='calc') calc();
+  if(v==='params') renderParams();
+  if(v==='hist') histRender();
+  window.scrollTo(0,0);
+}
+
+/* ---------------- Helpers ---------------- */
+const money = n => (Math.round((n||0)*100)/100).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+
+function bandFor(sqft){
+  for(const b of P.bands){ if(sqft>=b.de && sqft<=b.ate) return b; }
+  return P.bands[P.bands.length-1] || {regular:0,deep:0,move:0};
+}
+
+/* ---------------- Dynamic input builders (Calculadora) ---------------- */
+function buildSelectOptions(sel, items, labelKey, valKey){
+  sel.innerHTML = items.map(it=>`<option value="${it.key}">${it[labelKey]}</option>`).join('');
+}
+
+function renderCalcInputs(){
+  buildSelectOptions(document.getElementById('i-condicao'), P.condicao, 'label');
+  buildSelectOptions(document.getElementById('i-freq'), P.freq, 'label');
+
+  document.getElementById('toggle-areas').innerHTML = `
+    <div class="toggle-cell" id="cell-banheiro" onclick="toggleCell('banheiro')">
+      <div><div class="t-label">Banheiro no Porão</div><div class="t-val">+$${money(P.banheiroPorao)}</div></div>
+      <div class="switch"></div><input type="checkbox" id="i-banheiro" onchange="calc()">
+    </div>
+    <div class="toggle-cell" id="cell-garagem" onclick="toggleCell('garagem')">
+      <div><div class="t-label">Garagem</div><div class="t-val" id="garagem-val">+$${money(P.garagem)}</div></div>
+      <div class="switch"></div><input type="checkbox" id="i-garagem" onchange="calc()">
+    </div>
+    <div class="toggle-cell" id="cell-pets" onclick="toggleCell('pets')">
+      <div><div class="t-label">Pets</div><div class="t-val">+$${money(P.pets)}</div></div>
+      <div class="switch"></div><input type="checkbox" id="i-pets" onchange="calc()">
+    </div>
+  `;
+
+  document.getElementById('toggle-extras').innerHTML = P.extras.map(ex=>`
+    <div class="toggle-cell" id="cell-ex-${ex.key}" onclick="toggleCell('ex-${ex.key}')">
+      <div><div class="t-label">${ex.label}</div><div class="t-val">+$${money(ex.value)}</div></div>
+      <div class="switch"></div><input type="checkbox" id="i-ex-${ex.key}" onchange="calc()">
+    </div>
+  `).join('');
+
+  document.getElementById('carpet-list').innerHTML = P.carpete.map(c=>`
+    <div class="carpet-row">
+      <div class="c-label">${c.label}</div>
+      <div class="c-price num">$${money(c.value)}/un</div>
+      <input type="number" id="i-cp-${c.key}" value="0" min="0" step="1" oninput="calc()">
+    </div>
+  `).join('');
+}
+
+function toggleCell(id){
+  const cb = document.getElementById('i-'+id);
+  cb.checked = !cb.checked;
+  document.getElementById('cell-'+id).classList.toggle('on', cb.checked);
+  calc();
+}
+
+function onTipoChange(){ calc(); }
+
+/* ---------------- Calculator ---------------- */
+function calc(){
+  const tipo = document.getElementById('i-tipo').value;
+  const sqft = +document.getElementById('i-sqft').value || 0;
+  const condicaoKey = document.getElementById('i-condicao').value;
+  const freqKey = document.getElementById('i-freq').value;
+  const porao = document.getElementById('i-porao').value;
+  const banheiro = document.getElementById('i-banheiro').checked;
+  const garagem = document.getElementById('i-garagem').checked;
+  const pets = document.getElementById('i-pets').checked;
+
+  // sync toggle-cell visuals (in case of programmatic changes)
+  document.getElementById('cell-banheiro').classList.toggle('on', banheiro);
+  document.getElementById('cell-garagem').classList.toggle('on', garagem);
+  document.getElementById('cell-pets').classList.toggle('on', pets);
+
+  const band = bandFor(sqft);
+  const bKey = TIPO_KEY[tipo] || 'regular';
+  const precoBase = band[bKey] || 0;
+
+  const valorPorao = porao==='finished' ? (P.porao.finished||0) : porao==='unfinished' ? (P.porao.unfinished||0) : 0;
+  const valorBanheiro = banheiro ? P.banheiroPorao : 0;
+  const garagemUnit = tipo==='Deep' ? P.garagemDeep : P.garagem;
+  document.getElementById('garagem-val').textContent = '+$' + money(garagemUnit) + (tipo==='Deep' ? ' (Deep)' : '');
+  const valorGaragem = garagem ? garagemUnit : 0;
+  const valorPets = pets ? P.pets : 0;
+
+  const extrasSel = [];
+  let valorExtras = 0;
+  P.extras.forEach(ex=>{
+    const el = document.getElementById('i-ex-'+ex.key);
+    document.getElementById('cell-ex-'+ex.key).classList.toggle('on', el.checked);
+    if(el.checked){ valorExtras += ex.value; extrasSel.push(ex.label); }
+  });
+
+  const condObj = P.condicao.find(c=>c.key===condicaoKey) || {value:0,label:''};
+  const valorCondicao = condObj.value;
+
+  const subtotal = precoBase + valorPorao + valorBanheiro + valorGaragem + valorPets + valorExtras + valorCondicao;
+
+  const isRegular = tipo === 'Regular';
+  const freqObj = P.freq.find(f=>f.key===freqKey) || {pct:0,label:''};
+  const ajusteFreq = isRegular ? subtotal * freqObj.pct : 0;
+
+  document.getElementById('freq-hint').textContent = isRegular
+    ? 'Aplica-se ao serviço Regular selecionado.'
+    : 'Aplica-se apenas ao Regular — sem efeito para ' + tipo + '.';
+  document.getElementById('i-freq').style.opacity = isRegular ? '1' : '.55';
+
+  const carpeteSel = [];
+  let valorCarpete = 0;
+  P.carpete.forEach(c=>{
+    const el = document.getElementById('i-cp-'+c.key);
+    const qty = +el.value || 0;
+    if(qty>0){ valorCarpete += qty * c.value; carpeteSel.push(`${c.label} x${qty}`); }
+  });
+
+  const totalBruto = subtotal + ajusteFreq + valorCarpete;
+  const descPct = Math.max(0, +document.getElementById('i-desc').value || 0);
+  const taxaPct = Math.max(0, +document.getElementById('i-taxa').value || 0);
+  const valorDesconto = totalBruto * descPct / 100;
+  const valorTaxa = totalBruto * taxaPct / 100;
+  const final = totalBruto - valorDesconto + valorTaxa;
+
+  window._lastCalc = { tipo, sqft, final, totalBruto, descPct, valorDesconto, taxaPct, valorTaxa, subtotal, ajusteFreq, valorCarpete, valorExtras, precoBase, extrasSel, carpeteSel, freqLabel:freqObj.label, condLabel:condObj.label };
+  renderHero(final, tipo, sqft);
+  renderBreakdown({
+    precoBase, bandLabel:`${band.de}–${band.ate} sq ft`, tipo,
+    valorCondicao, condLabel:condObj.label,
+    valorPorao, poraoLabel: porao==='finished'?'Finished':porao==='unfinished'?'Unfinished':'Nenhum',
+    valorBanheiro, valorGaragem, valorPets,
+    valorExtras, extrasSel,
+    subtotal,
+    isRegular, ajusteFreq, freqLabel:freqObj.label, freqPct:freqObj.pct,
+    valorCarpete, carpeteSel,
+    totalBruto, descPct, valorDesconto, taxaPct, valorTaxa,
+    final
+  });
+  updateClientText({ tipo, sqft, condLabel:condObj.label, isRegular, freqLabel:freqObj.label,
+    porao, banheiro, garagem, pets, extrasSel, carpeteSel, descPct, taxaPct, final });
+}
+
+function renderHero(final, tipo, sqft){
+  document.getElementById('hero-price').textContent = money(final);
+  document.getElementById('bar-price').textContent = money(final);
+  document.getElementById('hero-sub').textContent = `${tipo} · ${sqft.toLocaleString('en-US')} sq ft`;
+}
+
+function renderBreakdown(d){
+  const rows = [];
+  rows.push(`<tr><td>Preço base (faixa ${d.bandLabel}, ${d.tipo})</td><td class="val">$${money(d.precoBase)}</td></tr>`);
+  rows.push(`<tr><td>Condição (${d.condLabel})</td><td class="val">+$${money(d.valorCondicao)}</td></tr>`);
+  if(d.valorPorao>0) rows.push(`<tr><td>Porão (${d.poraoLabel})</td><td class="val">+$${money(d.valorPorao)}</td></tr>`);
+  if(d.valorBanheiro>0) rows.push(`<tr><td>Banheiro no Porão</td><td class="val">+$${money(d.valorBanheiro)}</td></tr>`);
+  if(d.valorGaragem>0) rows.push(`<tr><td>Garagem</td><td class="val">+$${money(d.valorGaragem)}</td></tr>`);
+  if(d.valorPets>0) rows.push(`<tr><td>Pets</td><td class="val">+$${money(d.valorPets)}</td></tr>`);
+  if(d.extrasSel.length) rows.push(`<tr><td>Extras avulsos (${d.extrasSel.join(', ')})</td><td class="val">+$${money(d.valorExtras)}</td></tr>`);
+  rows.push(`<tr class="subtotal"><td>Subtotal da limpeza</td><td class="val">$${money(d.subtotal)}</td></tr>`);
+  if(d.isRegular){
+    const sign = d.ajusteFreq>=0 ? '+' : '';
+    rows.push(`<tr><td>Ajuste de frequência (${d.freqLabel}, ${(d.freqPct*100).toFixed(0)}%)</td><td class="val">${sign}$${money(d.ajusteFreq)}</td></tr>`);
+  } else {
+    rows.push(`<tr class="muted"><td>Ajuste de frequência — aplica-se apenas ao Regular</td><td class="val">$0.00</td></tr>`);
+  }
+  if(d.valorCarpete>0) rows.push(`<tr><td>Carpete (${d.carpeteSel.join(', ')})</td><td class="val">+$${money(d.valorCarpete)}</td></tr>`);
+  if(d.descPct>0 || d.taxaPct>0){
+    rows.push(`<tr class="subtotal"><td>Total antes dos ajustes manuais</td><td class="val">$${money(d.totalBruto)}</td></tr>`);
+    if(d.descPct>0) rows.push(`<tr><td>Desconto manual (${d.descPct}%)</td><td class="val">−$${money(d.valorDesconto)}</td></tr>`);
+    if(d.taxaPct>0) rows.push(`<tr><td>Taxa manual (${d.taxaPct}%)</td><td class="val">+$${money(d.valorTaxa)}</td></tr>`);
+  }
+  rows.push(`<tr class="final"><td>Preço Final</td><td class="val">$${money(d.final)}</td></tr>`);
+
+  document.getElementById('breakdown-table').innerHTML =
+    `<thead><tr><th>Item</th><th style="text-align:right">Valor</th></tr></thead><tbody>${rows.join('')}</tbody>`;
+}
+
+function updateClientText(d){
+  const opts = [];
+  if(d.porao!=='nenhum') opts.push('porão ' + (d.porao==='finished'?'finished':'unfinished'));
+  if(d.banheiro) opts.push('banheiro no porão');
+  if(d.garagem) opts.push('garagem');
+  if(d.pets) opts.push('pets');
+  if(d.extrasSel.length) opts.push(...d.extrasSel.map(x=>x.toLowerCase()));
+  if(d.carpeteSel.length) opts.push('carpete: ' + d.carpeteSel.join(', '));
+
+  let txt = `Serviço: ${d.tipo} · Metragem: ${d.sqft.toLocaleString('en-US')} sq ft · Condição: ${d.condLabel}`;
+  if(d.isRegular) txt += ` · Frequência: ${d.freqLabel}`;
+  if(opts.length) txt += `\nOpções: ${opts.join(', ')}`;
+  if(d.descPct>0) txt += `\nDesconto manual: ${d.descPct}%`;
+  if(d.taxaPct>0) txt += `\nTaxa manual: ${d.taxaPct}%`;
+  txt += `\nPreço Final: US$ ${money(d.final)}`;
+
+  document.getElementById('client-text').textContent = txt;
+  window._clientText = txt;
+}
+
+function copyClient(){
+  const txt = window._clientText || '';
+  navigator.clipboard?.writeText(txt).then(()=>toast('Texto copiado')).catch(()=>toast('Não foi possível copiar'));
+}
+
+/* ---------------- Parameters ---------------- */
+function renderParams(){
+  // bands
+  const bt = document.getElementById('band-table');
+  bt.innerHTML = `<thead><tr><th class="row-num">#</th><th>De (sq ft)</th><th>Até (sq ft)</th><th>Regular</th><th>Deep</th><th>Move In/Out</th></tr></thead><tbody>` +
+    P.bands.map((b,i)=>`<tr>
+      <td class="row-num">${i+1}</td>
+      <td><input type="number" value="${b.de}" step="1" oninput="P.bands[${i}].de=+this.value; markDirty()"></td>
+      <td><input type="number" value="${b.ate}" step="1" oninput="P.bands[${i}].ate=+this.value; markDirty()"></td>
+      <td><input type="number" value="${b.regular}" step="0.01" oninput="P.bands[${i}].regular=+this.value; markDirty()"></td>
+      <td><input type="number" value="${b.deep}" step="0.01" oninput="P.bands[${i}].deep=+this.value; markDirty()"></td>
+      <td><input type="number" value="${b.move}" step="0.01" oninput="P.bands[${i}].move=+this.value; markDirty()"></td>
+    </tr>`).join('') + `</tbody>`;
+
+  // condicao
+  document.getElementById('condicao-grid').innerHTML = P.condicao.map((c,i)=>`
+    <div class="cost-cell">
+      <label>${c.label}</label>
+      <div class="with-unit"><span class="unit">$</span>
+      <input type="number" step="1" value="${c.value}" oninput="P.condicao[${i}].value=+this.value; markDirty()"></div>
+    </div>`).join('');
+
+  // freq
+  document.getElementById('freq-grid').innerHTML = P.freq.map((f,i)=>`
+    <div class="cost-cell unit-pct">
+      <label>${f.label}</label>
+      <div class="with-unit"><span class="unit">%</span>
+      <input type="number" step="1" value="${(f.pct*100).toFixed(0)}" oninput="P.freq[${i}].pct=+this.value/100; markDirty()"></div>
+    </div>`).join('');
+
+  // areas extras (porao finished/unfinished + banheiro/garagem/pets)
+  document.getElementById('areas-grid').innerHTML = `
+    <div class="cost-cell">
+      <label>Porão — Finished</label>
+      <div class="with-unit"><span class="unit">$</span>
+      <input type="number" step="1" value="${P.porao.finished}" oninput="P.porao.finished=+this.value; markDirty()"></div>
+    </div>
+    <div class="cost-cell">
+      <label>Porão — Unfinished</label>
+      <div class="with-unit"><span class="unit">$</span>
+      <input type="number" step="1" value="${P.porao.unfinished}" oninput="P.porao.unfinished=+this.value; markDirty()"></div>
+    </div>
+    <div class="cost-cell">
+      <label>Banheiro no Porão</label>
+      <div class="with-unit"><span class="unit">$</span>
+      <input type="number" step="1" value="${P.banheiroPorao}" oninput="P.banheiroPorao=+this.value; markDirty()"></div>
+    </div>
+    <div class="cost-cell">
+      <label>Garagem</label>
+      <div class="with-unit"><span class="unit">$</span>
+      <input type="number" step="1" value="${P.garagem}" oninput="P.garagem=+this.value; markDirty()"></div>
+    </div>
+    <div class="cost-cell">
+      <label>Garagem (Deep Clean)</label>
+      <div class="with-unit"><span class="unit">$</span>
+      <input type="number" step="1" value="${P.garagemDeep}" oninput="P.garagemDeep=+this.value; markDirty()"></div>
+    </div>
+    <div class="cost-cell">
+      <label>Pets</label>
+      <div class="with-unit"><span class="unit">$</span>
+      <input type="number" step="1" value="${P.pets}" oninput="P.pets=+this.value; markDirty()"></div>
+    </div>`;
+
+  // extras avulsos
+  document.getElementById('extras-grid').innerHTML = P.extras.map((ex,i)=>`
+    <div class="cost-cell">
+      <label>${ex.label}</label>
+      <div class="with-unit"><span class="unit">$</span>
+      <input type="number" step="1" value="${ex.value}" oninput="P.extras[${i}].value=+this.value; markDirty()"></div>
+    </div>`).join('');
+
+  // carpete
+  document.getElementById('carpete-grid').innerHTML = P.carpete.map((c,i)=>`
+    <div class="cost-cell">
+      <label>${c.label}</label>
+      <div class="with-unit"><span class="unit">$</span>
+      <input type="number" step="1" value="${c.value}" oninput="P.carpete[${i}].value=+this.value; markDirty()"></div>
+    </div>`).join('');
+}
+
+function markDirty(){
+  window._dirty = true;
+  document.getElementById('save-status').textContent = "Alterações não salvas";
+  document.querySelector('.dot').style.background = "var(--orange)";
+}
+async function saveParams(){
+  if(window.FIREBASE_CONFIG){
+    if(!DB.user){ toast('Entre (aba Histórico) para salvar a tabela compartilhada'); return; }
+    try{ await DB.impl.saveParams(P); }catch(e){ toast('Erro ao salvar: ' + (e.message||e)); return; }
+    window._dirty = false;
+  } else persist();
+  document.getElementById('save-status').textContent = window.FIREBASE_CONFIG ? "Salvo para todos" : "Salvo";
+  document.querySelector('.dot').style.background = "var(--ok)";
+  toast('Parâmetros salvos');
+  renderCalcInputs();
+  calc();
+}
+function resetParams(){
+  if(confirm('Restaurar os parâmetros padrão? Suas alterações serão perdidas.')){
+    P = structuredClone(DEFAULTS);
+    if(window.FIREBASE_CONFIG){
+      if(!DB.user){ toast('Entre (aba Histórico) para restaurar'); return; }
+      DB.impl.saveParams(P).catch(e=>toast('Erro ao salvar: '+(e.message||e)));
+      window._dirty = false;
+    } else persist();
+    renderParams();
+    renderCalcInputs();
+    calc();
+    toast('Parâmetros restaurados');
+    document.getElementById('save-status').textContent = "Restaurado ao padrão";
+    document.querySelector('.dot').style.background = "var(--ok)";
+  }
+}
+
+/* ---------------- Toast ---------------- */
+function toast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(window._tt);
+  window._tt = setTimeout(()=>t.classList.remove('show'), 1800);
+}
+
+/* ---------------- Histórico (Firebase) ---------------- */
+const EST_IDS = ['i-tipo','i-sqft','i-condicao','i-freq','i-porao','i-desc','i-taxa','i-cli-nome','i-cli-contato','i-cli-end','i-cli-obs'];
+function getInputs(){
+  const o = {};
+  EST_IDS.forEach(id=>o[id]=document.getElementById(id).value);
+  ['i-banheiro','i-garagem','i-pets'].forEach(id=>o[id]=document.getElementById(id).checked);
+  o.extras = {}; P.extras.forEach(ex=>o.extras[ex.key]=document.getElementById('i-ex-'+ex.key).checked);
+  o.carpete = {}; P.carpete.forEach(c=>o.carpete[c.key]=+document.getElementById('i-cp-'+c.key).value||0);
+  return o;
+}
+function setInputs(o){
+  EST_IDS.forEach(id=>{ if(o[id]!==undefined) document.getElementById(id).value = o[id]; });
+  ['i-banheiro','i-garagem','i-pets'].forEach(id=>{ document.getElementById(id).checked = !!o[id]; });
+  P.extras.forEach(ex=>document.getElementById('i-ex-'+ex.key).checked = !!(o.extras&&o.extras[ex.key]));
+  P.carpete.forEach(c=>document.getElementById('i-cp-'+c.key).value = (o.carpete&&o.carpete[c.key])||0);
+}
+function newEstimate(){
+  setInputs({'i-tipo':'Regular','i-sqft':1500,'i-condicao':P.condicao[0].key,'i-freq':P.freq[0].key,'i-porao':'nenhum','i-desc':0,'i-taxa':0,'i-cli-nome':'','i-cli-contato':'','i-cli-end':'','i-cli-obs':'',extras:{},carpete:{}});
+  document.getElementById('loaded-note').style.display='none';
+  calc();
+}
+
+const DB = { ready:false, user:null, docs:[], err:null, impl:null, listeners:[] };
+function dbNotify(){ DB.listeners.forEach(f=>f()); }
+
+async function dbInit(){
+  const cfg = window.FIREBASE_CONFIG;
+  if(!cfg){ DB.err = 'nao-configurado'; dbNotify(); return; }
+  try{
+    const base = 'https://www.gstatic.com/firebasejs/10.12.2/';
+    const [{initializeApp}, fs, au] = await Promise.all([
+      import(base+'firebase-app.js'), import(base+'firebase-firestore.js'), import(base+'firebase-auth.js')]);
+    const app = initializeApp(cfg);
+    const db = fs.getFirestore(app), auth = au.getAuth(app);
+    DB.impl = {
+      add: d => fs.addDoc(fs.collection(db,'orcamentos'), Object.assign({}, d, { criadoEm: fs.serverTimestamp() })),
+      signIn: (e,p) => au.signInWithEmailAndPassword(auth,e,p),
+      signOut: () => au.signOut(auth),
+      saveParams: p => fs.setDoc(fs.doc(db,'config','parametros'), { json: JSON.stringify(p), atualizadoPor: (auth.currentUser&&auth.currentUser.email)||'', atualizadoEm: fs.serverTimestamp() })
+    };
+    let unsub = null, unsubP = null;
+    au.onAuthStateChanged(auth, user=>{
+      DB.user = user; DB.ready = true;
+      if(unsub){ unsub(); unsub=null; }
+      if(unsubP){ unsubP(); unsubP=null; }
+      DB.paramsSynced = false;
+      if(user){
+        unsubP = fs.onSnapshot(fs.doc(db,'config','parametros'), snap=>{
+          DB.paramsSynced = true; DB.paramsExist = snap.exists();
+          if(snap.exists() && !window._dirty){
+            try{ onRemoteParams(JSON.parse(snap.data().json)); }catch(e){}
+          }
+          dbNotify();
+        }, e=>{ DB.err = e.message || String(e); dbNotify(); });
+        const q = fs.query(fs.collection(db,'orcamentos'), fs.orderBy('criadoEm','desc'), fs.limit(500));
+        unsub = fs.onSnapshot(q, snap=>{
+          DB.docs = snap.docs.map(x=>Object.assign({id:x.id}, x.data()));
+          DB.err = null; dbNotify();
+        }, e=>{ DB.err = e.message || String(e); dbNotify(); });
+      } else { DB.docs = []; }
+      dbNotify();
+    });
+  }catch(e){ DB.err = e.message || String(e); dbNotify(); }
+}
+DB.listeners.push(()=>{ if(document.getElementById('view-hist').classList.contains('active')) histRender(); });
+
+function onRemoteParams(saved){
+  const inp = getInputs();
+  applySaved(saved);
+  renderCalcInputs();
+  setInputs(inp);
+  calc();
+  if(document.getElementById('view-params').classList.contains('active')) renderParams();
+}
+function syncNote(){
+  const n = document.getElementById('sync-note'); if(!n) return;
+  let msg = '';
+  if(window.FIREBASE_CONFIG){
+    if(!DB.ready) msg = 'Conectando ao banco de dados…';
+    else if(!DB.user) msg = 'Você não está conectado: os preços abaixo são os valores padrão, não a tabela compartilhada. Entre na aba Histórico.';
+    else if(!DB.paramsSynced) msg = 'Carregando a tabela de preços compartilhada…';
+    else if(!DB.paramsExist) msg = 'A tabela compartilhada ainda não foi salva: usando os valores padrão. Salve na aba Parâmetros para todos usarem a mesma.';
+  }
+  n.textContent = msg; n.style.display = msg ? 'block' : 'none';
+}
+DB.listeners.push(syncNote);
+
+function esc(x){ return String(x==null?'':x).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+function fmtDate(t){
+  try{ const d = t && t.toDate ? t.toDate() : (t ? new Date(t) : null); return d ? d.toLocaleString('pt-BR',{dateStyle:'short',timeStyle:'short'}) : '—'; }catch(e){ return '—'; }
+}
+
+async function saveEstimate(){
+  if(!window.FIREBASE_CONFIG){ toast('Banco de dados não configurado'); showView('hist'); return; }
+  if(!DB.user){ toast('Entre para salvar'); showView('hist'); return; }
+  const inp = getInputs();
+  if(!inp['i-cli-nome'].trim()){ toast('Informe o nome do cliente'); document.getElementById('i-cli-nome').focus(); return; }
+  calc();
+  const r = window._lastCalc;
+  const doc = {
+    cliente: inp['i-cli-nome'].trim(), contato: inp['i-cli-contato'].trim(), endereco: inp['i-cli-end'].trim(), observacoes: inp['i-cli-obs'].trim(),
+    tipo: r.tipo, sqft: r.sqft, condicao: r.condLabel, frequencia: r.freqLabel,
+    precoBase: r.precoBase, subtotal: r.subtotal, ajusteFrequencia: r.ajusteFreq, carpete: r.valorCarpete, extras: r.valorExtras,
+    totalBruto: r.totalBruto, descontoPct: r.descPct, descontoValor: r.valorDesconto, taxaPct: r.taxaPct, taxaValor: r.valorTaxa,
+    total: r.final,
+    entradas: inp,
+    resumoCliente: window._clientText || '',
+    parametrosUsados: JSON.stringify(P),
+    criadoPor: DB.user.email || DB.user.uid
+  };
+  const b = document.getElementById('btn-save-est'); b.disabled = true; b.textContent = 'Salvando…';
+  try{ await DB.impl.add(doc); toast('Orçamento salvo no histórico'); }
+  catch(e){ toast('Erro ao salvar: ' + (e.message||e)); }
+  b.disabled = false; b.textContent = 'Salvar orçamento';
+}
+
+async function doLogin(){
+  try{ await DB.impl.signIn(document.getElementById('lg-email').value.trim(), document.getElementById('lg-pass').value); document.getElementById('lg-pass').value=''; }
+  catch(e){ toast('Não foi possível entrar: e-mail ou senha incorretos'); }
+}
+async function doLogout(){ try{ await DB.impl.signOut(); }catch(e){} }
+
+function histRender(){
+  const st = document.getElementById('hist-status'), lg = document.getElementById('hist-login'), mn = document.getElementById('hist-main');
+  lg.style.display = mn.style.display = 'none'; st.innerHTML = '';
+  if(DB.err === 'nao-configurado'){
+    st.innerHTML = '<div class="card"><div class="body"><b>Banco de dados ainda não configurado.</b><br><span class="hint">Preencha o arquivo <code>firebase-config.js</code> com os dados do projeto Firebase para salvar e consultar os orçamentos.</span></div></div>'; return;
+  }
+  if(DB.err && !DB.docs.length){ st.innerHTML = '<div class="card"><div class="body"><b>Erro ao acessar o banco de dados.</b><br><span class="hint">'+esc(DB.err)+'</span></div></div>'; }
+  if(!DB.ready){ st.innerHTML += '<div class="hint">Conectando…</div>'; return; }
+  if(!DB.user){ lg.style.display = 'block'; return; }
+  mn.style.display = 'block';
+  document.getElementById('hist-user').textContent = 'Conectado como ' + (DB.user.email||'');
+  const q = document.getElementById('hist-q').value.trim().toLowerCase();
+  const rows = DB.docs.filter(d=>!q || [d.cliente,d.endereco,d.contato,d.tipo,d.criadoPor].join(' ').toLowerCase().includes(q));
+  document.getElementById('hist-table').innerHTML =
+    '<thead><tr><th>Data</th><th>Cliente</th><th>Serviço</th><th>sq ft</th><th style="text-align:right">Total</th><th>Responsável</th><th></th></tr></thead><tbody>' +
+    (rows.length ? rows.map(d=>`<tr>
+      <td>${esc(fmtDate(d.criadoEm))}</td>
+      <td><b>${esc(d.cliente)}</b><div class="hint">${esc(d.endereco||d.contato||'')}</div></td>
+      <td>${esc(d.tipo)}${d.descontoPct>0?' · −'+d.descontoPct+'%':''}${d.taxaPct>0?' · +'+d.taxaPct+'%':''}</td>
+      <td>${(d.sqft||0).toLocaleString('en-US')}</td>
+      <td style="text-align:right" class="num"><b>$${money(d.total||0)}</b></td>
+      <td>${esc(d.criadoPor||'')}</td>
+      <td><button class="btn btn-ghost" onclick="histOpen('${esc(d.id)}')">Abrir</button></td></tr>`).join('')
+     : '<tr><td colspan="7" class="hint" style="padding:18px">Nenhum orçamento salvo ainda.</td></tr>') + '</tbody>';
+}
+
+function histOpen(id){
+  const d = DB.docs.find(x=>x.id===id); if(!d || !d.entradas) return;
+  showView('calc');
+  setInputs(d.entradas); calc();
+  const note = document.getElementById('loaded-note');
+  const diff = Math.abs((window._lastCalc.final||0) - (d.total||0)) > 0.005;
+  note.textContent = `Orçamento salvo em ${fmtDate(d.criadoEm)} por ${d.criadoPor||'—'}. Valor salvo: $${money(d.total)}.` +
+    (diff ? ` Com os parâmetros atuais o cálculo dá $${money(window._lastCalc.final)}.` : '');
+  note.style.display = 'block';
+}
+
+/* ---------------- Init ---------------- */
+load();
+renderCalcInputs();
+calc();
+dbInit();
+syncNote();
+</script>
+</body>
+</html>
