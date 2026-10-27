@@ -13,3 +13,6 @@ window.FIREBASE_CONFIG = {
 // Com a chave, o botão "Buscar foto da casa" traz a foto da rua (Street View).
 // Sem a chave, o sistema usa uma imagem de satélite do endereço.
 window.GOOGLE_MAPS_KEY = "";
+
+// E-mails (em minúsculas) que só podem usar a calculadora, sem acesso ao dashboard.
+window.RS_CALC_ONLY = ["aline.vendas.com@gmail.com"];
