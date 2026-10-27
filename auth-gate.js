@@ -6,7 +6,7 @@
   const cfg = window.FIREBASE_CONFIG;
   const isLogin = !!window.RS_LOGIN_PAGE;
   const api = window.RS_AUTH = {
-    user:null, ready:false, open:false, error:null, _l:[],
+    user:null, ready:false, open:false, error:null, calcOnly:false, _l:[],
     onChange(f){ api._l.push(f); if(api.ready) f(api.user); },
     _emit(){ api._l.forEach(f=>{ try{ f(api.user); }catch(e){} }); },
     signIn: async()=>{ throw new Error('indisponível'); },
@@ -35,8 +35,11 @@
     api.signOut = ()=>au.signOut(auth);
     au.onAuthStateChanged(auth, user=>{
       api.user = user; api.ready = true;
+      const lista = (window.RS_CALC_ONLY||[]).map(x=>String(x).trim().toLowerCase());
+      api.calcOnly = !!(user && user.email && lista.includes(user.email.toLowerCase()));
       if(!isLogin){
         if(!user){ location.replace('index.html'); return; }
+        if(api.calcOnly && /dashboard\.html$/i.test(location.pathname)){ location.replace('calculadora.html'); return; }
         root.style.visibility = 'visible';
         if(document.body) addBar(user); else document.addEventListener('DOMContentLoaded', ()=>addBar(user));
       }

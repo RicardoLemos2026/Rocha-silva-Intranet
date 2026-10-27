@@ -176,6 +176,10 @@
   .btn-ghost:hover{border-color:var(--navy)}
 
   .cost-grid{display:grid; grid-template-columns:repeat(4,1fr); gap:14px}
+  .prop-info{background:#f4f7fc; border:1px solid #d5e0f2; border-radius:10px; padding:11px 13px; margin-top:8px; font-size:12.5px; line-height:1.55; color:var(--navy)}
+  .prop-info .pi-grid{display:grid; grid-template-columns:1fr 1fr; gap:2px 14px}
+  .prop-info .pi-grid span{color:var(--grey-600)}
+  .prop-info button{margin-top:8px}
   .zip-faixa{font-size:12.5px; border-radius:10px; padding:9px 12px; margin:-2px 0 12px; line-height:1.4}
   .zip-faixa.z-verde{background:#e6f4ea; color:#1e6b3a; border:1px solid #b7dfc3}
   .zip-faixa.z-amarelo{background:#fdf3d0; color:#7a5b00; border:1px solid #efd98a}
@@ -332,7 +336,12 @@
                 <input type="text" id="i-cli-cidade" placeholder="auto pelo ZIP"></div>
             </div>
             <div id="zip-faixa" class="zip-faixa" style="display:none"></div>
-            <button class="btn btn-ghost" id="btn-photo" onclick="findPhoto()" type="button">Buscar foto da casa</button>
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
+              <button class="btn btn-ghost" id="btn-prop" onclick="findProperty()" type="button">Buscar dados do imóvel</button>
+              <button class="btn btn-ghost" id="btn-photo" onclick="findPhoto()" type="button">Buscar foto da casa</button>
+            </div>
+            <div class="hint" id="prop-status" style="margin-top:8px"></div>
+            <div id="prop-info" class="prop-info" style="display:none"></div>
             <div class="hint" id="photo-status" style="margin-top:8px"></div>
             <div id="photo-box" style="display:none;margin-top:10px;position:relative"><img id="photo-img" alt="Property" style="width:100%;border-radius:10px;border:1px solid var(--grey-200);display:block"><div id="photo-pin" style="display:none;position:absolute;left:50%;top:50%;width:34px;height:34px;margin:-17px 0 0 -17px;border:3px solid #FF1257;border-radius:50%;box-shadow:0 0 0 2px #fff,inset 0 0 0 2px #fff;pointer-events:none"></div></div>
           </div>
@@ -529,6 +538,25 @@
       <div class="cost-grid" id="regiao-grid"></div>
     </div>
 
+    <!-- RentCast -->
+    <div class="p-section">
+      <div class="p-head">
+        <div><h2 class="section" style="margin:0">Dados do imóvel (RentCast)</h2>
+        <p>Chave da API RentCast, usada pelo botão “Buscar dados do imóvel” na calculadora. Fica guardada no banco compartilhado (não no código do site) e não entra nos orçamentos salvos.</p></div>
+      </div>
+      <div class="cost-grid">
+        <div class="cost-cell" style="grid-column:1/-1">
+          <label>Chave da API RentCast</label>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <input type="password" id="rc-key" autocomplete="off" placeholder="cole a chave aqui" style="flex:1;min-width:220px">
+            <button class="btn btn-primary" type="button" onclick="saveRentcastKey()">Salvar chave</button>
+            <button class="btn btn-ghost" type="button" onclick="clearRentcastKey()">Remover</button>
+          </div>
+          <div class="hint" id="rc-status" style="margin-top:6px"></div>
+        </div>
+      </div>
+    </div>
+
     <!-- Áreas extras -->
     <div class="p-section">
       <div class="p-head">
@@ -679,7 +707,7 @@ function showView(v){
   ['guide','calc','hist','params'].forEach(x=>
     document.getElementById('tab-'+x).classList.toggle('active', v===x));
   if(v==='calc') calc();
-  if(v==='params') renderParams();
+  if(v==='params'){ renderParams(); rcStatus(); }
   if(v==='hist') histRender();
   window.scrollTo(0,0);
 }
@@ -1060,6 +1088,7 @@ function newEstimate(){
   setInputs({'i-tipo':'Regular','i-sqft':1500,'i-condicao':P.condicao[0].key,'i-freq':P.freq[0].key,'i-porao':'nenhum','i-desc':0,'i-taxa':0,'i-cli-nome':'','i-cli-contato':'','i-cli-end':'','i-cli-obs':'','i-cli-zip':'','i-cli-cidade':'','i-final-manual':'',extras:{},carpete:{}});
   setEditing(null);
   setPhoto('', '', '');
+  setProperty(null, '');
   document.getElementById('loaded-note').style.display='none';
   calc();
 }
@@ -1081,6 +1110,8 @@ async function dbInit(){
       update: (id, d) => fs.updateDoc(fs.doc(db,'orcamentos',id), Object.assign({}, d, { editadoEm: fs.serverTimestamp() })),
       signIn: (e,p) => au.signInWithEmailAndPassword(auth,e,p),
       signOut: () => au.signOut(auth),
+      getKey: async()=>{ const sn = await fs.getDoc(fs.doc(db,'config','integracoes')); return (sn.exists() && sn.data().rentcastKey) || ''; },
+      saveKey: k => fs.setDoc(fs.doc(db,'config','integracoes'), { rentcastKey: k, atualizadoPor: (auth.currentUser&&auth.currentUser.email)||'', atualizadoEm: fs.serverTimestamp() }, { merge:true }),
       saveParams: p => fs.setDoc(fs.doc(db,'config','parametros'), { json: JSON.stringify(p), atualizadoPor: (auth.currentUser&&auth.currentUser.email)||'', atualizadoEm: fs.serverTimestamp() })
     };
     let unsub = null, unsubP = null;
@@ -1159,6 +1190,7 @@ async function saveEstimate(asNew){
     parametrosUsados: JSON.stringify(P),
     zip: inp['i-cli-zip'].trim(), cidade: inp['i-cli-cidade'].trim(),
     valorCalculado: r.finalCalc, valorFinalManual: r.hasManual ? r.final : null,
+    imovel: window._property || null,
     fotoUrl: (window._photo && window._photo.url) || '', fotoFonte: (window._photo && window._photo.source) || ''
   };
   const editing = window._editingId && asNew !== true;
@@ -1208,6 +1240,7 @@ function histOpen(id){
   showView('calc');
   setInputs(d.entradas); setEditing(id);
   setPhoto(d.fotoUrl||'', d.fotoFonte||'', d.fotoUrl ? 'Foto salva neste orçamento.' : '');
+  setProperty(d.imovel||null, d.imovel ? 'Dados do imóvel salvos neste orçamento.' : '');
   calc();
   const note = document.getElementById('loaded-note');
   const diff = Math.abs((window._lastCalc.final||0) - (d.total||0)) > 0.005;
@@ -1523,6 +1556,101 @@ async function findPhoto(){
       setPhoto('', '', 'Address not found. Check the street, number and ZIP code.');
     }
   }catch(e){ setPhoto('', '', 'Could not search right now: ' + (e.message||e)); }
+  btn.disabled = false;
+}
+
+
+/* ---------------- RentCast: dados do imóvel por endereço ---------------- */
+const RC_LS = 'rsRentcastKey';
+let _rcKey = null;
+async function getRentcastKey(force){
+  if(_rcKey !== null && !force) return _rcKey;
+  try{
+    if(window.FIREBASE_CONFIG){
+      if(!DB.impl || !DB.user) return '';
+      _rcKey = (await DB.impl.getKey()) || '';
+    } else _rcKey = localStorage.getItem(RC_LS) || '';
+  }catch(e){ return ''; }
+  return _rcKey;
+}
+async function rcStatus(){
+  const el = document.getElementById('rc-status'); if(!el) return;
+  const k = await getRentcastKey(true);
+  el.textContent = k ? 'Chave configurada (termina em …' + k.slice(-4) + ').' : 'Nenhuma chave configurada.';
+}
+async function saveRentcastKey(){
+  const v = document.getElementById('rc-key').value.trim();
+  if(!v){ toast('Cole a chave primeiro'); return; }
+  try{
+    if(window.FIREBASE_CONFIG){
+      if(!DB.user){ toast('Entre (aba Histórico) para salvar a chave'); return; }
+      await DB.impl.saveKey(v);
+    } else localStorage.setItem(RC_LS, v);
+    _rcKey = v; document.getElementById('rc-key').value = ''; toast('Chave salva'); rcStatus();
+  }catch(e){ toast('Erro ao salvar: ' + (e.message||e)); }
+}
+async function clearRentcastKey(){
+  if(!confirm('Remover a chave RentCast?')) return;
+  try{
+    if(window.FIREBASE_CONFIG){ if(!DB.user){ toast('Entre para remover'); return; } await DB.impl.saveKey(''); }
+    else localStorage.removeItem(RC_LS);
+    _rcKey = ''; toast('Chave removida'); rcStatus();
+  }catch(e){ toast('Erro: ' + (e.message||e)); }
+}
+
+window._property = null;
+window._propCache = {};
+function setProperty(p, msg){
+  window._property = p || null;
+  const box = document.getElementById('prop-info'), st = document.getElementById('prop-status');
+  st.textContent = msg || '';
+  if(!p){ box.style.display = 'none'; box.innerHTML = ''; return; }
+  const v = x => (x===null || x===undefined || x==='') ? '—' : esc(x);
+  const n = x => (typeof x==='number') ? x.toLocaleString('en-US') : '—';
+  const rows = [
+    ['Metragem', p.squareFootage ? n(p.squareFootage)+' sq ft' : '—'],
+    ['Quartos', v(p.bedrooms)], ['Banheiros', v(p.bathrooms)],
+    ['Ano de construção', v(p.yearBuilt)], ['Tipo', v(p.propertyType)],
+    ['Terreno', p.lotSize ? n(p.lotSize)+' sq ft' : '—'],
+    ['Andares', v(p.floorCount)], ['Garagem', p.garage===true ? 'Sim'+(p.garageSpaces?' ('+p.garageSpaces+' vagas)':'') : (p.garage===false ? 'Não' : '—')]
+  ];
+  box.innerHTML = (p.formattedAddress ? '<div style="font-weight:600;margin-bottom:4px">'+esc(p.formattedAddress)+'</div>' : '') +
+    '<div class="pi-grid">' + rows.map(r=>`<div><span>${r[0]}:</span> ${r[1]}</div>`).join('') + '</div>' +
+    (p.squareFootage ? `<button class="btn btn-ghost" type="button" onclick="useStoredSqft()">Usar metragem (${n(p.squareFootage)} sq ft)</button>` : '');
+  box.style.display = 'block';
+}
+function useStoredSqft(){
+  const p = window._property; if(!p || !p.squareFootage) return;
+  document.getElementById('i-sqft').value = p.squareFootage; calc(); toast('Metragem aplicada');
+}
+async function findProperty(){
+  const btn = document.getElementById('btn-prop'), st = document.getElementById('prop-status');
+  const street = document.getElementById('i-cli-end').value.trim();
+  const zip = document.getElementById('i-cli-zip').value.trim();
+  const city = document.getElementById('i-cli-cidade').value.trim();
+  if(!street || !/^\d{5}$/.test(zip)){ st.textContent = 'Preencha o endereço (número e rua) e o ZIP code de 5 dígitos.'; return; }
+  const key = await getRentcastKey();
+  if(!key){ st.textContent = window.FIREBASE_CONFIG && !DB.user ? 'Entre na aba Histórico para usar esta busca.' : 'Chave RentCast não configurada. Peça ao administrador (aba Parâmetros).'; return; }
+  const address = [street, city, zip].filter(Boolean).join(', ');
+  if(window._propCache[address]){ const c = window._propCache[address]; setProperty(c, 'Dados do imóvel (já consultado nesta sessão — não gastou consulta).'); return; }
+  btn.disabled = true; st.textContent = 'Consultando RentCast… (usa 1 consulta do plano)';
+  try{
+    const r = await fetch('https://api.rentcast.io/v1/properties?address=' + encodeURIComponent(address) + '&limit=1', { headers:{ 'X-Api-Key': key, 'Accept':'application/json' } });
+    if(r.status === 401 || r.status === 403){ setProperty(null, 'Chave RentCast recusada. Confira a chave em Parâmetros.'); btn.disabled = false; return; }
+    if(r.status === 429){ setProperty(null, 'Limite de consultas do plano RentCast atingido.'); btn.disabled = false; return; }
+    if(r.status === 404){ setProperty(null, 'Endereço não encontrado na RentCast. Confira rua, número e ZIP.'); btn.disabled = false; return; }
+    if(!r.ok){ setProperty(null, 'RentCast respondeu com erro ' + r.status + '.'); btn.disabled = false; return; }
+    const arr = await r.json();
+    const rec = Array.isArray(arr) ? arr[0] : arr;
+    if(!rec){ setProperty(null, 'Nenhum imóvel encontrado para esse endereço.'); btn.disabled = false; return; }
+    const f = rec.features || {};
+    const p = { formattedAddress: rec.formattedAddress||'', squareFootage: rec.squareFootage||null, bedrooms: rec.bedrooms ?? null, bathrooms: rec.bathrooms ?? null,
+      yearBuilt: rec.yearBuilt||null, propertyType: rec.propertyType||'', lotSize: rec.lotSize||null, floorCount: f.floorCount ?? null, garage: (typeof f.garage==='boolean') ? f.garage : null, garageSpaces: f.garageSpaces ?? null };
+    window._propCache[address] = p;
+    setProperty(p, 'Dados encontrados. Confira se é o imóvel certo antes de usar.');
+  }catch(e){
+    setProperty(null, 'Não foi possível consultar a RentCast a partir do navegador (' + (e.message||e) + '). Se persistir, avise o suporte.');
+  }
   btn.disabled = false;
 }
 
