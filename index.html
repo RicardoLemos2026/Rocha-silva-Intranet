@@ -148,6 +148,7 @@ RS_AUTH.onChange(user=>{
   show('home', ok?'block':'none'); show('login', ok?'none':'block');
   const out=document.getElementById('out'); out.style.display = (!RS_AUTH.open && user) ? 'flex' : 'none';
   document.getElementById('out-user').textContent = user ? (user.email||'') : '';
+  const dc=document.querySelector('.card.dash'); if(dc) dc.style.display = RS_AUTH.calcOnly ? 'none' : '';
 });
 </script>
 </body>
