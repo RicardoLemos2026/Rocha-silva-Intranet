@@ -1,6 +1,12 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+
+    // Usuários que só podem usar a calculadora (mantenha igual a RS_CALC_ONLY em firebase-config.js)
+    function calcOnly() {
+      return request.auth.token.email.lower() in ['aline.vendas.com@gmail.com'];
+    }
+
     match /orcamentos/{id} {
       allow read, create, update: if request.auth != null;
       allow delete: if false;
@@ -8,5 +14,10 @@ service cloud.firestore {
     match /config/{id} {
       allow read, write: if request.auth != null;
     }
+
+    // Ligações do RingCentral: só o extrator (conta de serviço) grava; o site só lê.
+    match /ligacoes/{id}        { allow read: if request.auth != null && !calcOnly(); allow write: if false; }
+    match /ligacoes_dia/{id}    { allow read: if request.auth != null && !calcOnly(); allow write: if false; }
+    match /ligacoes_meta/{id}   { allow read: if request.auth != null && !calcOnly(); allow write: if false; }
   }
 }

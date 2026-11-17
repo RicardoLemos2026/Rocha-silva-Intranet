@@ -120,6 +120,13 @@
         <div class="go">Abrir dashboard</div>
       </a>
 
+      <a class="card dash ligacoes" href="ligacoes.html">
+        <div class="icon">📞</div>
+        <h2>Ligações (RingCentral)</h2>
+        <p>Volume de ligações por dia e por ramal, perdidas sem retorno, horários de pico e, quando a gravação estiver ativa, resumo de cada conversa.</p>
+        <div class="go">Abrir ligações</div>
+      </a>
+
       <a class="card calc" href="calculadora.html">
         <div class="icon">🧮</div>
         <h2>Calculadora de Preços</h2>
@@ -148,7 +155,7 @@ RS_AUTH.onChange(user=>{
   show('home', ok?'block':'none'); show('login', ok?'none':'block');
   const out=document.getElementById('out'); out.style.display = (!RS_AUTH.open && user) ? 'flex' : 'none';
   document.getElementById('out-user').textContent = user ? (user.email||'') : '';
-  const dc=document.querySelector('.card.dash'); if(dc) dc.style.display = RS_AUTH.calcOnly ? 'none' : '';
+  document.querySelectorAll('.card.dash').forEach(dc=>{ dc.style.display = RS_AUTH.calcOnly ? 'none' : ''; });
 });
 </script>
 </body>

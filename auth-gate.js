@@ -39,7 +39,7 @@
       api.calcOnly = !!(user && user.email && lista.includes(user.email.toLowerCase()));
       if(!isLogin){
         if(!user){ location.replace('index.html'); return; }
-        if(api.calcOnly && /dashboard\.html$/i.test(location.pathname)){ location.replace('calculadora.html'); return; }
+        if(api.calcOnly && /(dashboard|ligacoes)\.html$/i.test(location.pathname)){ location.replace('calculadora.html'); return; }
         root.style.visibility = 'visible';
         if(document.body) addBar(user); else document.addEventListener('DOMContentLoaded', ()=>addBar(user));
       }

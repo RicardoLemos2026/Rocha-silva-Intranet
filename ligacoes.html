@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<script src="firebase-config.js"></script>
+<script src="auth-gate.js"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rocha Silva Cleaning — Ligações</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#f5f5f8;--surface:#fff;--surface2:#eeeef3;--border:rgba(0,0,0,.09);
+    --text:#1a1a2e;--muted:#7a7a8f;--pink:#ff1257;
+    --ok:#1e7d46;--ok-bg:rgba(30,125,70,.1);--bad:#c0392b;--bad-bg:rgba(192,57,43,.09);
+    --out:#2b5fb4;--warn:#b7860a;--warn-bg:rgba(183,134,10,.12);
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min-height:100vh;}
+  .page{max-width:1280px;margin:0 auto;padding:0 24px 70px;}
+  header{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;padding:28px 0 22px;border-bottom:1px solid var(--border);margin-bottom:22px;}
+  h1{font-family:'Bebas Neue',cursive;font-size:44px;letter-spacing:2px;line-height:1;}
+  h1 span{color:var(--pink);}
+  .sub{font-size:12px;color:var(--muted);font-family:'DM Mono',monospace;margin-top:6px;}
+  .controls{display:flex;gap:10px;flex-wrap:wrap;align-items:center;}
+  .seg{display:inline-flex;background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden;}
+  .seg button{all:unset;cursor:pointer;padding:8px 14px;font-size:13px;font-weight:600;color:var(--muted);}
+  .seg button.on{background:var(--text);color:#fff;}
+  select{font:600 13px 'DM Sans',sans-serif;padding:8px 12px;border-radius:10px;border:1px solid var(--border);background:var(--surface);color:var(--text);}
+  .notice{background:var(--warn-bg);border:1px solid rgba(183,134,10,.3);color:#6d5006;border-radius:12px;padding:12px 16px;font-size:13px;margin-bottom:18px;line-height:1.5;}
+  .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:22px;}
+  .kpi{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:16px 16px 14px;}
+  .kpi .l{font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);font-family:'DM Mono',monospace;}
+  .kpi .v{font-family:'Bebas Neue',cursive;font-size:38px;line-height:1.1;margin-top:4px;}
+  .kpi .n{font-size:11.5px;color:var(--muted);margin-top:2px;}
+  .v.ok{color:var(--ok);} .v.bad{color:var(--bad);} .v.pink{color:var(--pink);} .v.out{color:var(--out);}
+  .grid2{display:grid;grid-template-columns:2fr 1fr;gap:14px;margin-bottom:22px;}
+  @media(max-width:900px){.grid2{grid-template-columns:1fr;}}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:18px 18px 14px;margin-bottom:22px;}
+  .grid2 .card{margin-bottom:0;}
+  .card h2{font-size:12px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);font-family:'DM Mono',monospace;font-weight:500;margin-bottom:14px;display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;}
+  .legend{display:flex;gap:14px;font-size:12px;text-transform:none;letter-spacing:0;font-family:'DM Sans',sans-serif;}
+  .legend i{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:5px;}
+  svg text{font-family:'DM Mono',monospace;font-size:10px;fill:var(--muted);}
+  table{width:100%;border-collapse:collapse;font-size:13px;}
+  th{text-align:left;font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);font-family:'DM Mono',monospace;font-weight:500;padding:8px 10px;border-bottom:1px solid var(--border);white-space:nowrap;}
+  td{padding:10px;border-bottom:1px solid var(--border);vertical-align:top;}
+  tr:last-child td{border-bottom:none;}
+  td.num,th.num{text-align:right;font-variant-numeric:tabular-nums;}
+  .tbl-wrap{overflow-x:auto;}
+  .pill{display:inline-block;padding:2px 9px;border-radius:999px;font-size:11.5px;font-weight:600;white-space:nowrap;}
+  .p-ok{background:var(--ok-bg);color:var(--ok);} .p-bad{background:var(--bad-bg);color:var(--bad);}
+  .p-warn{background:var(--warn-bg);color:var(--warn);} .p-out{background:rgba(43,95,180,.1);color:var(--out);}
+  .p-mut{background:var(--surface2);color:var(--muted);}
+  tr.call{cursor:pointer;} tr.call:hover td{background:#fafafd;}
+  tr.det td{background:#fafafd;font-size:13px;line-height:1.55;}
+  .det b{font-weight:700;} .det .tr{margin-top:8px;color:var(--muted);white-space:pre-wrap;font-size:12.5px;max-height:220px;overflow:auto;border-left:3px solid var(--border);padding-left:10px;}
+  .chips{display:flex;gap:8px;flex-wrap:wrap;}
+  .empty{color:var(--muted);font-size:13px;padding:10px 2px;}
+  .bar{height:8px;background:var(--surface2);border-radius:6px;overflow:hidden;min-width:70px;}
+  .bar>div{height:100%;background:var(--ok);}
+  .loading{padding:60px 0;text-align:center;color:var(--muted);}
+</style>
+</head>
+<body>
+<div class="page">
+  <header>
+    <div>
+      <h1>Ligações <span>RingCentral</span></h1>
+      <div class="sub" id="sync">Carregando…</div>
+    </div>
+    <div class="controls">
+      <div class="seg" id="seg-period">
+        <button data-d="1">Hoje</button><button data-d="7" class="on">7 dias</button><button data-d="14">14 dias</button><button data-d="30">30 dias</button>
+      </div>
+      <select id="sel-ramal"><option value="">Todos os ramais</option></select>
+    </div>
+  </header>
+
+  <div id="msg"></div>
+  <div id="app"><div class="loading">Carregando ligações…</div></div>
+</div>
+
+<script type="module">
+const TZ = 'America/New_York';
+const CLASS_LABEL = {orcamento:'Orçamento',agendamento:'Agendamento',reagendamento:'Reagendamento',duvida:'Dúvida',reclamacao:'Reclamação',cobranca:'Cobrança',fornecedor_spam:'Fornecedor/Spam',outro:'Outro'};
+const STATUS = {atendida:['Atendida','p-ok'],perdida:['Perdida','p-bad'],caixa:['Caixa postal','p-warn'],nao_atendida:['Sem resposta','p-mut'],outro:['Outro','p-mut']};
+const SENT = {positivo:'🙂 Positivo',neutro:'😐 Neutro',negativo:'🙁 Negativo'};
+let DAYS = [], CALLS = [], META = null, period = 7, ramal = '';
+
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const fmtDur = s => { s = Math.round(s||0); const m = Math.floor(s/60); return m ? `${m}min ${String(s%60).padStart(2,'0')}s` : `${s}s`; };
+const fmtPhone = p => { const d = String(p||'').replace(/\D/g,''); return d.length===11&&d[0]==='1' ? `(${d.slice(1,4)}) ${d.slice(4,7)}-${d.slice(7)}` : (p||'—'); };
+const pct = (a,b) => b ? Math.round(a/b*100) : null;
+const pctTxt = v => v===null ? '—' : v+'%';
+const fmtDia = k => k.slice(8)+'/'+k.slice(5,7);
+const fmtQuando = iso => new Date(iso).toLocaleString('pt-BR',{timeZone:TZ,day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
+const todayKey = () => new Date().toLocaleDateString('en-CA',{timeZone:TZ});
+function addDays(key, n){ const d = new Date(key+'T12:00:00Z'); d.setUTCDate(d.getUTCDate()+n); return d.toISOString().slice(0,10); }
+
+/* ---------- dados ---------- */
+async function load(){
+  const cfg = window.FIREBASE_CONFIG;
+  if(!cfg){ return loadDemo(); }
+  const base = 'https://www.gstatic.com/firebasejs/10.12.2/';
+  const [appm, fs] = await Promise.all([import(base+'firebase-app.js'), import(base+'firebase-firestore.js')]);
+  const db = fs.getFirestore(appm.initializeApp(cfg));
+  const since = addDays(todayKey(), -29);
+  const [dSnap, cSnap, mSnap] = await Promise.all([
+    fs.getDocs(fs.query(fs.collection(db,'ligacoes_dia'), fs.where(fs.documentId(),'>=',since))),
+    fs.getDocs(fs.query(fs.collection(db,'ligacoes'), fs.where('inicio','>=',since+'T00:00:00Z'), fs.orderBy('inicio','desc'), fs.limit(600))),
+    fs.getDoc(fs.doc(db,'ligacoes_meta','status'))
+  ]);
+  DAYS = dSnap.docs.map(d => ({...d.data(), dia:d.id})).sort((a,b)=>a.dia<b.dia?-1:1);
+  CALLS = cSnap.docs.map(d => ({...d.data(), _id:d.id}));
+  META = mSnap.exists() ? mSnap.data() : null;
+}
+
+function loadDemo(){            // só para testes locais, sem Firebase configurado
+  const names = {'101':'Rocha Silva','102':'Rocha Silva Cleaning Sales','103':'Carina Aiello'};
+  let seed = 7; const rnd = () => (seed = (seed*16807)%2147483647)/2147483647;
+  const t = todayKey(); DAYS = []; CALLS = [];
+  const cls = Object.keys(CLASS_LABEL);
+  for(let i=29;i>=0;i--){
+    const dia = addDays(t,-i), ramais = {}, horas = Object.fromEntries([...Array(24).keys()].map(h=>[h,0]));
+    for(const r of ['101','102','103']){
+      const n = Math.floor(rnd()*(r==='102'?14:7))+1;
+      const o = {nome:names[r],total:0,recebidas:0,feitas:0,atendidas:0,perdidas:0,caixa:0,segFalados:0,perdidasRetornadas:0,horas:{}};
+      for(let h=0;h<24;h++) o.horas[h]=0;
+      for(let k=0;k<n;k++){
+        const rec = rnd()<.7, h = 8+Math.floor(rnd()*10), x = rnd();
+        const st = rec ? (x<.72?'atendida':x<.88?'perdida':'caixa') : (x<.7?'atendida':'nao_atendida');
+        const dur = st==='atendida' ? 40+Math.floor(rnd()*400) : (st==='caixa'?25:0);
+        o.total++; o[rec?'recebidas':'feitas']++; o.horas[h]++; horas[h]++;
+        if(st==='atendida'){o.atendidas++; o.segFalados+=dur;} if(st==='perdida')o.perdidas++; if(st==='caixa')o.caixa++;
+        const ret = rec && (st==='perdida'||st==='caixa') ? rnd()<.6 : null; if(ret) o.perdidasRetornadas++;
+        const c = {_id:dia+r+k, inicio:`${dia}T${String(h+5).padStart(2,'0')}:${String(Math.floor(rnd()*60)).padStart(2,'0')}:00Z`, dia, hora:h, ramal:r, ramalNome:names[r],
+          direcao:rec?'recebida':'feita', status:st, duracao:dur, numero:`+1412555${String(1000+Math.floor(rnd()*8999))}`, nome:rnd()<.4?['Maria Souza','John Smith','Pat Miller','Ana Lima'][Math.floor(rnd()*4)]:'', gravada:dur>=15, retornada:ret};
+        if(i<5 && dur>=60 && rnd()<.7){ Object.assign(c,{classificacao:cls[Math.floor(rnd()*5)], resumo:'Cliente ligou pedindo orçamento de deep clean para casa de 3 quartos; combinou retorno com valores.', proximoPasso:'Enviar orçamento por e-mail hoje', sentimento:['positivo','neutro','negativo'][Math.floor(rnd()*3)], transcricao:'Hi, I would like a quote for a deep clean…\n(demonstração)'}); }
+        CALLS.push(c);
+      }
+      ramais[r]=o;
+    }
+    const sum = k => Object.values(ramais).reduce((a,r)=>a+r[k],0);
+    DAYS.push({dia, ramais, horas, total:sum('total'),recebidas:sum('recebidas'),feitas:sum('feitas'),atendidas:sum('atendidas'),perdidas:sum('perdidas'),caixa:sum('caixa'),segFalados:sum('segFalados'),perdidasRetornadas:sum('perdidasRetornadas')});
+  }
+  CALLS.sort((a,b)=>a.inicio<b.inicio?1:-1);
+  META = {ultimaSync:new Date().toISOString(), iaAtiva:true};
+  $('#msg').innerHTML = '<div class="notice"><b>Modo demonstração</b> — dados fictícios, só aparecem quando o Firebase não está configurado.</div>';
+}
+
+/* ---------- agregação ---------- */
+function slice(){
+  const from = addDays(todayKey(), -(period-1));
+  const days = DAYS.filter(d => d.dia >= from);
+  const calls = CALLS.filter(c => c.dia >= from && (!ramal || c.ramal===ramal));
+  const rows = days.map(d => {            // linha por dia, respeitando o filtro de ramal
+    if(!ramal) return d;
+    const r = d.ramais?.[ramal];
+    return r ? {dia:d.dia, ...r} : {dia:d.dia,total:0,recebidas:0,feitas:0,atendidas:0,perdidas:0,caixa:0,segFalados:0,perdidasRetornadas:0,horas:{}};
+  });
+  const sum = k => rows.reduce((a,r)=>a+(r[k]||0),0);
+  const horas = Array.from({length:24},(_,h)=>rows.reduce((a,r)=>a+((r.horas||{})[h]||0),0));
+  return {from, rows, calls, horas, t:{total:sum('total'),recebidas:sum('recebidas'),feitas:sum('feitas'),atendidas:sum('atendidas'),perdidas:sum('perdidas'),caixa:sum('caixa'),seg:sum('segFalados'),ret:sum('perdidasRetornadas')}};
+}
+
+/* ---------- gráficos (SVG) ---------- */
+function chartDias(rows){
+  if(!rows.length) return '<div class="empty">Sem dados no período.</div>';
+  const W=720,H=230,L=30,B=26,T=10, w=W-L, h=H-B-T;
+  const max = Math.max(4, ...rows.map(r=>r.total||0));
+  const step = w/rows.length, bw = Math.min(34, step*.62);
+  let s = `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Ligações por dia">`;
+  for(let i=0;i<=4;i++){ const y=T+h-h*i/4; s+=`<line x1="${L}" x2="${W}" y1="${y}" y2="${y}" stroke="rgba(0,0,0,.07)"/><text x="${L-6}" y="${y+3}" text-anchor="end">${Math.round(max*i/4)}</text>`; }
+  rows.forEach((r,i)=>{
+    const x = L+step*i+(step-bw)/2, perd=(r.perdidas||0)+(r.caixa||0), recOk=Math.max(0,(r.recebidas||0)-perd), fei=r.feitas||0;
+    let y=T+h;
+    for(const [v,c] of [[recOk,'var(--ok)'],[perd,'var(--bad)'],[fei,'var(--out)']]){
+      if(!v) continue; const bh=h*v/max; y-=bh; s+=`<rect x="${x}" y="${y}" width="${bw}" height="${bh}" fill="${c}" rx="2"/>`;
+    }
+    if(rows.length<=16 || i%Math.ceil(rows.length/12)===0) s+=`<text x="${x+bw/2}" y="${H-8}" text-anchor="middle">${fmtDia(r.dia)}</text>`;
+    s+=`<title>${fmtDia(r.dia)}: ${r.total||0} ligações (${recOk} recebidas atendidas, ${perd} perdidas, ${fei} feitas)</title>`;
+  });
+  return s+'</svg>';
+}
+function chartHoras(horas){
+  const ini=7, fim=20, vals=horas.slice(ini,fim+1), max=Math.max(1,...vals), W=330,H=200,B=22,h=H-B-6, bw=(W-8)/vals.length;
+  let s=`<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Ligações por hora">`;
+  vals.forEach((v,i)=>{ const bh=h*v/max, x=4+bw*i;
+    s+=`<rect x="${x+2}" y="${6+h-bh}" width="${bw-4}" height="${bh}" rx="2" fill="${v===max&&v>0?'var(--pink)':'#c9c9d6'}"><title>${ini+i}h: ${v} ligações</title></rect>`;
+    if(i%2===0) s+=`<text x="${x+bw/2}" y="${H-6}" text-anchor="middle">${ini+i}h</text>`; });
+  return s+'</svg>';
+}
+
+/* ---------- tela ---------- */
+function render(){
+  const S = slice(), t = S.t, perdTot = t.perdidas+t.caixa;
+  const taxaAt = t.recebidas ? 100-pct(perdTot,t.recebidas) : null, taxaRet = pct(t.ret, perdTot);
+  const medio = t.atendidas ? t.seg/t.atendidas : 0;
+  const pico = Math.max(...S.horas), horaPico = pico>0 ? S.horas.indexOf(pico) : null;
+
+  const ramais = {};
+  for(const d of DAYS.filter(d=>d.dia>=S.from)) for(const [k,r] of Object.entries(d.ramais||{})){
+    const a = ramais[k] ||= {nome:r.nome,total:0,recebidas:0,feitas:0,atendidas:0,perdidas:0,caixa:0,seg:0,ret:0};
+    a.total+=r.total; a.recebidas+=r.recebidas; a.feitas+=r.feitas; a.atendidas+=r.atendidas; a.perdidas+=r.perdidas; a.caixa+=r.caixa; a.seg+=r.segFalados; a.ret+=r.perdidasRetornadas;
+    if(r.nome) a.nome=r.nome;
+  }
+  const sel = $('#sel-ramal'); if(sel.options.length<=1 || sel.dataset.n!=Object.keys(ramais).length){
+    sel.dataset.n = Object.keys(ramais).length;
+    sel.innerHTML = '<option value="">Todos os ramais</option>'+Object.keys(ramais).sort().map(k=>`<option value="${k}">${esc(k)} · ${esc(ramais[k].nome)}</option>`).join(''); sel.value = ramal; }
+
+  const pend = S.calls.filter(c=>c.direcao==='recebida' && (c.status==='perdida'||c.status==='caixa') && c.retornada===false);
+  const resumidas = S.calls.filter(c=>c.classificacao);
+  const porClasse = {}; resumidas.forEach(c=>porClasse[c.classificacao]=(porClasse[c.classificacao]||0)+1);
+
+  let h = `<div class="kpis">
+    <div class="kpi"><div class="l">Ligações</div><div class="v">${t.total}</div><div class="n">${t.recebidas} recebidas · ${t.feitas} feitas</div></div>
+    <div class="kpi"><div class="l">Taxa de atendimento</div><div class="v ${taxaAt===null?'':taxaAt>=85?'ok':'bad'}">${pctTxt(taxaAt)}</div><div class="n">das ligações recebidas</div></div>
+    <div class="kpi"><div class="l">Perdidas</div><div class="v ${perdTot?'bad':''}">${perdTot}</div><div class="n">${t.perdidas} sem resposta · ${t.caixa} caixa postal</div></div>
+    <div class="kpi"><div class="l">Retorno das perdidas</div><div class="v ${taxaRet===null?'':taxaRet>=80?'ok':'bad'}">${pctTxt(taxaRet)}</div><div class="n">${t.ret} de ${perdTot} retornadas</div></div>
+    <div class="kpi"><div class="l">Tempo médio</div><div class="v out">${t.atendidas?fmtDur(medio):'—'}</div><div class="n">por ligação atendida</div></div>
+    <div class="kpi"><div class="l">Horário de pico</div><div class="v pink">${horaPico===null?'—':horaPico+'h'}</div><div class="n">${horaPico===null?'':pico+' ligações nessa hora'}</div></div>
+  </div>
+  <div class="grid2">
+    <div class="card"><h2><span>Ligações por dia</span><span class="legend"><span><i style="background:var(--ok)"></i>Recebidas atendidas</span><span><i style="background:var(--bad)"></i>Perdidas</span><span><i style="background:var(--out)"></i>Feitas</span></span></h2>${chartDias(S.rows)}</div>
+    <div class="card"><h2><span>Por horário (horário da Pensilvânia)</span></h2>${chartHoras(S.horas)}</div>
+  </div>`;
+
+  h += `<div class="card"><h2><span>Por ramal</span></h2><div class="tbl-wrap"><table><thead><tr><th>Ramal</th><th class="num">Total</th><th class="num">Recebidas</th><th class="num">Feitas</th><th class="num">Perdidas</th><th class="num">Tempo médio</th><th>Retorno das perdidas</th></tr></thead><tbody>`;
+  const ks = Object.keys(ramais).sort();
+  h += ks.length ? ks.map(k=>{ const r=ramais[k], pr=r.perdidas+r.caixa, rp=pct(r.ret,pr);
+    return `<tr><td><b>${esc(k)}</b> · ${esc(r.nome)}</td><td class="num">${r.total}</td><td class="num">${r.recebidas}</td><td class="num">${r.feitas}</td><td class="num">${pr}</td><td class="num">${r.atendidas?fmtDur(r.seg/r.atendidas):'—'}</td><td>${rp===null?'—':`<div style="display:flex;gap:8px;align-items:center"><div class="bar"><div style="width:${rp}%"></div></div>${rp}%</div>`}</td></tr>`; }).join('') : '<tr><td colspan="7" class="empty">Sem ligações no período.</td></tr>';
+  h += `</tbody></table></div></div>`;
+
+  h += `<div class="card"><h2><span>Perdidas ainda sem retorno (${pend.length})</span></h2>`;
+  h += pend.length ? `<div class="tbl-wrap"><table><thead><tr><th>Quando</th><th>Ramal</th><th>Número</th><th>Tipo</th><th>Recado</th></tr></thead><tbody>`+
+    pend.slice(0,40).map(c=>`<tr><td>${fmtQuando(c.inicio)}</td><td>${esc(c.ramal)}</td><td><b>${esc(fmtPhone(c.numero))}</b>${c.nome?'<br><span style="color:var(--muted)">'+esc(c.nome)+'</span>':''}</td><td><span class="pill ${STATUS[c.status][1]}">${STATUS[c.status][0]}</span></td><td>${esc(c.resumo||'')}</td></tr>`).join('')+`</tbody></table></div>`
+    : '<div class="empty">Nenhuma ligação perdida pendente no período. 👏</div>';
+  h += `</div>`;
+
+  h += `<div class="card"><h2><span>Resumo das conversas</span></h2>`;
+  if(resumidas.length){
+    h += `<div class="chips" style="margin-bottom:6px">`+Object.entries(porClasse).sort((a,b)=>b[1]-a[1]).map(([k,v])=>`<span class="pill p-out">${esc(CLASS_LABEL[k]||k)}: ${v}</span>`).join('')+`</div>`;
+  } else {
+    h += `<div class="empty">${META && META.iaAtiva ? 'Ainda não há ligações resumidas neste período.' : 'Os resumos aparecem aqui quando a gravação das ligações for ativada. Por enquanto o painel mostra só os números.'}</div>`;
+  }
+  h += `</div>`;
+
+  h += `<div class="card"><h2><span>Ligações (${S.calls.length}${S.calls.length>=100?', mostrando as 100 mais recentes':''})</span></h2><div class="tbl-wrap"><table><thead><tr><th>Quando</th><th>Ramal</th><th></th><th>Número</th><th>Status</th><th class="num">Duração</th><th>Assunto</th></tr></thead><tbody>`;
+  h += S.calls.length ? S.calls.slice(0,100).map((c,i)=>{
+    const [st,cl] = STATUS[c.status]||STATUS.outro;
+    return `<tr class="call" data-i="${i}"><td>${fmtQuando(c.inicio)}</td><td>${esc(c.ramal)}</td><td>${c.direcao==='recebida'?'⬇ recebida':'⬆ feita'}</td><td>${esc(fmtPhone(c.numero))}${c.nome?'<br><span style="color:var(--muted)">'+esc(c.nome)+'</span>':''}</td><td><span class="pill ${cl}">${st}</span></td><td class="num">${c.duracao?fmtDur(c.duracao):'—'}</td><td>${c.classificacao?`<span class="pill p-out">${esc(CLASS_LABEL[c.classificacao]||c.classificacao)}</span>`:(c.gravada?'<span style="color:var(--muted)">🎙 gravada</span>':'')}</td></tr>`; }).join('')
+    : '<tr><td colspan="7" class="empty">Nenhuma ligação no período.</td></tr>';
+  h += `</tbody></table></div></div>`;
+
+  $('#app').innerHTML = h;
+  $('#app').querySelectorAll('tr.call').forEach(tr => tr.onclick = () => {
+    const nx = tr.nextElementSibling; if(nx && nx.classList.contains('det')){ nx.remove(); return; }
+    const c = S.calls[+tr.dataset.i];
+    const d = document.createElement('tr'); d.className='det';
+    d.innerHTML = `<td colspan="7"><div class="det">`+
+      (c.resumo ? `<div><b>Resumo:</b> ${esc(c.resumo)}</div><div><b>Próximo passo:</b> ${esc(c.proximoPasso||'—')}</div><div><b>Cliente:</b> ${esc(SENT[c.sentimento]||'—')}${c.valorMencionado?` · <b>Valor citado:</b> $${esc(c.valorMencionado)}`:''}</div>${c.transcricao?`<div class="tr">${esc(c.transcricao)}</div>`:''}`
+        : `<div class="empty" style="padding:0">${c.gravada?'Gravada, resumo ainda não gerado.':'Sem gravação — só os dados da ligação.'}${c.retornada===true?` Retornada${c.minRetorno!=null?` após ${c.minRetorno} min`:''}.`:''}</div>`)+`</div></td>`;
+    tr.after(d);
+  });
+  const sy = META && META.ultimaSync ? 'Atualizado em '+new Date(META.ultimaSync).toLocaleString('pt-BR',{timeZone:'America/Sao_Paulo',dateStyle:'short',timeStyle:'short'})+' (Brasília)' : 'Sem sincronização ainda';
+  $('#sync').textContent = sy+' · horários da Pensilvânia';
+}
+
+document.querySelectorAll('#seg-period button').forEach(b => b.onclick = () => {
+  document.querySelectorAll('#seg-period button').forEach(x=>x.classList.remove('on')); b.classList.add('on');
+  period = +b.dataset.d; render(); });
+$('#sel-ramal').onchange = e => { ramal = e.target.value; render(); };
+
+function start(){
+  load().then(()=>{
+    if(!DAYS.length) $('#msg').innerHTML = '<div class="notice">Ainda não há dados sincronizados. Assim que o extrator rodar pela primeira vez, as ligações aparecem aqui.</div>';
+    render();
+  }).catch(e=>{ console.error(e); $('#app').innerHTML = '<div class="notice">Não foi possível carregar as ligações. Verifique a conexão e as permissões do Firestore.<br><small>'+esc(e.message||e)+'</small></div>'; });
+}
+if(window.RS_AUTH){ if(RS_AUTH.ready) start(); else { let once=false; RS_AUTH.onChange(u=>{ if(!once && (u || !window.FIREBASE_CONFIG)){ once=true; start(); } }); } } else start();
+</script>
+</body>
+</html>
