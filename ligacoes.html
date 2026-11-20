@@ -70,7 +70,7 @@
     </div>
     <div class="controls">
       <div class="seg" id="seg-period">
-        <button data-d="1">Hoje</button><button data-d="7" class="on">7 dias</button><button data-d="14">14 dias</button><button data-d="30">30 dias</button>
+        <button data-d="1">Ontem</button><button data-d="7" class="on">7 dias</button><button data-d="14">14 dias</button><button data-d="30">30 dias</button>
       </div>
       <select id="sel-ramal"><option value="">Todos os ramais</option></select>
     </div>
@@ -105,7 +105,7 @@ async function load(){
   const base = 'https://www.gstatic.com/firebasejs/10.12.2/';
   const [appm, fs] = await Promise.all([import(base+'firebase-app.js'), import(base+'firebase-firestore.js')]);
   const db = fs.getFirestore(appm.initializeApp(cfg));
-  const since = addDays(todayKey(), -29);
+  const since = addDays(todayKey(), -31);
   const [dSnap, cSnap, mSnap] = await Promise.all([
     fs.getDocs(fs.query(fs.collection(db,'ligacoes_dia'), fs.where(fs.documentId(),'>=',since))),
     fs.getDocs(fs.query(fs.collection(db,'ligacoes'), fs.where('inicio','>=',since+'T00:00:00Z'), fs.orderBy('inicio','desc'), fs.limit(600))),
@@ -151,9 +151,10 @@ function loadDemo(){            // só para testes locais, sem Firebase configur
 
 /* ---------- agregação ---------- */
 function slice(){
-  const from = addDays(todayKey(), -(period-1));
-  const days = DAYS.filter(d => d.dia >= from);
-  const calls = CALLS.filter(c => c.dia >= from && (!ramal || c.ramal===ramal));
+  const to = addDays(todayKey(), -1);                 // atualização diária: último dia completo = ontem
+  const from = addDays(to, -(period-1));
+  const days = DAYS.filter(d => d.dia >= from && d.dia <= to);
+  const calls = CALLS.filter(c => c.dia >= from && c.dia <= to && (!ramal || c.ramal===ramal));
   const rows = days.map(d => {            // linha por dia, respeitando o filtro de ramal
     if(!ramal) return d;
     const r = d.ramais?.[ramal];
@@ -161,7 +162,7 @@ function slice(){
   });
   const sum = k => rows.reduce((a,r)=>a+(r[k]||0),0);
   const horas = Array.from({length:24},(_,h)=>rows.reduce((a,r)=>a+((r.horas||{})[h]||0),0));
-  return {from, rows, calls, horas, t:{total:sum('total'),recebidas:sum('recebidas'),feitas:sum('feitas'),atendidas:sum('atendidas'),perdidas:sum('perdidas'),caixa:sum('caixa'),seg:sum('segFalados'),ret:sum('perdidasRetornadas')}};
+  return {from, to, rows, calls, horas, t:{total:sum('total'),recebidas:sum('recebidas'),feitas:sum('feitas'),atendidas:sum('atendidas'),perdidas:sum('perdidas'),caixa:sum('caixa'),seg:sum('segFalados'),ret:sum('perdidasRetornadas')}};
 }
 
 /* ---------- gráficos (SVG) ---------- */
@@ -200,7 +201,7 @@ function render(){
   const pico = Math.max(...S.horas), horaPico = pico>0 ? S.horas.indexOf(pico) : null;
 
   const ramais = {};
-  for(const d of DAYS.filter(d=>d.dia>=S.from)) for(const [k,r] of Object.entries(d.ramais||{})){
+  for(const d of DAYS.filter(d=>d.dia>=S.from && d.dia<=S.to)) for(const [k,r] of Object.entries(d.ramais||{})){
     const a = ramais[k] ||= {nome:r.nome,total:0,recebidas:0,feitas:0,atendidas:0,perdidas:0,caixa:0,seg:0,ret:0};
     a.total+=r.total; a.recebidas+=r.recebidas; a.feitas+=r.feitas; a.atendidas+=r.atendidas; a.perdidas+=r.perdidas; a.caixa+=r.caixa; a.seg+=r.segFalados; a.ret+=r.perdidasRetornadas;
     if(r.nome) a.nome=r.nome;
@@ -264,7 +265,7 @@ function render(){
     tr.after(d);
   });
   const sy = META && META.ultimaSync ? 'Atualizado em '+new Date(META.ultimaSync).toLocaleString('pt-BR',{timeZone:'America/Sao_Paulo',dateStyle:'short',timeStyle:'short'})+' (Brasília)' : 'Sem sincronização ainda';
-  $('#sync').textContent = sy+' · horários da Pensilvânia';
+  $('#sync').textContent = sy+' · horários da Pensilvânia · período até ontem ('+fmtDia(S.to)+')';
 }
 
 document.querySelectorAll('#seg-period button').forEach(b => b.onclick = () => {
